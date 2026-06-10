@@ -1,0 +1,238 @@
+REACH
+AI-Native Mini CRM for D2C Brands
+Product Requirements Document
+Author
+Atul — SRM IST, CSE 2027
+Version
+1.1 — Updated for Azure + Groq stack
+Date
+June 2026
+Status
+Submitted — Xeno SDE Internship 2026
+
+
+1. Executive Summary
+Reach is an AI-native Mini CRM built for D2C and retail brands to intelligently engage their shoppers. The product lets marketers describe who they want to reach in plain language, uses AI to suggest a customer segment and message, then fires personalized campaigns across WhatsApp, SMS, and Email — tracking every delivery event in real time through a two-service callback architecture.
+
+Core thesis: AI does not replace the marketer — it amplifies them. Every AI suggestion can be reviewed, edited, and confirmed before any campaign fires.
+
+Segment
+Message
+Deliver & Track
+AI + manual filters to define who to reach
+AI (Groq) drafts personalized copy; marketer edits
+Async callback loop tracks every event
+
+2. Problem Statement
+D2C brands with thousands of shoppers face three compounding problems:
+	•	Manual segmentation is slow and brittle. Marketers spend hours building static lists that go stale the moment data changes.
+	•	Generic messaging destroys trust. Batch-and-blast campaigns with no personalization lead to low open rates and high unsubscribes.
+	•	Campaign performance is a black box. After sending, brands have no visibility into what actually happened — delivered, read, clicked, or ignored.
+
+Opportunity: A single marketer with Reach should be able to — in under 5 minutes — identify a precise audience, craft a personalized message with AI help, fire the campaign, and watch delivery events arrive in real time.
+
+3. Goals
+3.1  Product Goals
+#
+Goal
+Rationale
+G1
+Enable AI-assisted segmentation from natural language
+Reduces time-to-audience from hours to seconds
+G2
+Deliver personalized messages at campaign scale
+Dynamic tokens (name, product, recency) improve relevance
+G3
+Model the full message lifecycle via async callbacks
+Mirrors real-world channel delivery infrastructure
+G4
+Surface real-time campaign analytics and anomaly signals
+Gives marketers data to iterate and improve
+G5
+Maintain a dynamic, auto-updating segment layer
+Prevents stale audiences without manual refresh
+
+3.2  Non-Goals (explicit out of scope)
+	•	Sales pipeline management — no deals, leads, or pipeline stages
+	•	Customer support ticketing — no inbound ticket handling or SLA tracking
+	•	Real messaging provider integration — channel service is stubbed
+	•	Multi-user permissions / role-based access control
+	•	Mobile app — web only for this scope
+
+4. User Personas
+Meera — Brand Marketer
+Rohit — Brand Admin / Data Owner
+Growth lead at a D2C fashion label. Runs 3–5 campaigns per week. Knows her segments intuitively but hates writing SQL or waiting for data teams. Primary user of AI sidebar, campaign creator, analytics dashboard.
+Operations manager who seeds customer and order data. Occasionally browses the customer list and checks delivery stats. Cares about data accuracy. Primary user of data ingestion, customer list, and raw stats.
+
+5. User Stories
+5.1  Data Ingestion
+US-01 — CSV Upload (Priority: Must)
+As a brand admin, I want to upload a CSV of customers and orders so that the CRM is seeded with realistic shopper data without manual entry.
+US-02 — Customer List (Priority: Must)
+As a brand admin, I want to view a searchable, paginated customer list with RFM scores so that I can quickly understand who our high-value and at-risk shoppers are.
+5.2  Segmentation
+US-03 — AI Intent Segmentation (Priority: Must)
+As a marketer, I want to type a plain-English description of the audience I want to reach (e.g. 'women who bought twice but haven't purchased in 3 months') so that the AI resolves my intent into a segment filter and shows me the audience count instantly.
+US-04 — Manual Segment Builder (Priority: Must)
+As a marketer, I want to manually build a segment using filter controls (channel, recency, frequency, spend, lifecycle stage) so that I have precise control when the AI suggestion doesn't match my intent.
+US-05 — Saved Segment Views (Priority: Should)
+As a marketer, I want to save a segment as a named view (e.g. 'VIP Customers', 'Lapsed 90 Days') so that I can reuse audience definitions across multiple campaigns without rebuilding them.
+5.3  Campaign Creation & AI Assist
+US-07 — AI Message Draft (Priority: Must)
+As a marketer, I want to create a campaign by picking a segment, a channel, and describing the campaign goal so that the AI (via Groq) drafts a personalized message with the customer's name, last purchase, and recency baked in.
+US-08 — Edit AI Draft (Priority: Must)
+As a marketer, I want to edit the AI-drafted message before sending so that I maintain full control and can adjust tone, offer, or copy before any message goes out.
+5.4  Message Delivery (Channel Stub)
+US-11 — Real-time Delivery Events (Priority: Must)
+As a marketer, I want to fire a campaign and watch per-message delivery events arrive in real time so that I can see exactly which messages were delivered, failed, opened, or clicked as they happen.
+5.5  Analytics & Insights
+US-13 — Campaign Dashboard (Priority: Must)
+As a marketer, I want to view a campaign-level dashboard showing sent, delivered, open rate, click rate, and failures so that I can evaluate performance and know where to improve the next campaign.
+US-15 — Per-Campaign Drilldown (Priority: Must)
+As a marketer, I want to drill into a single campaign and see per-message status for every shopper in the audience so that I can debug specific delivery failures or investigate high performers.
+
+6. Feature List
+6.1  Must-Have (MVP — v1.0)
+Feature
+Details
+F-01  Customer data ingestion
+CSV upload + seed script. Stores customers, orders, RFM scores. PostgreSQL via Prisma ORM.
+F-02  Searchable customer list
+Paginated table with name, email, RFM score badge (High Value / At Risk / Dormant / New), last purchase.
+F-03  Manual segment builder
+Filter controls: recency (days since last order), frequency (# orders), spend range, lifecycle stage, channel preference.
+F-04  AI-intent segmentation
+Natural language input → Groq API (llama-3.3-70b-versatile) resolves to segment filter → shows audience count. Marketer confirms or adjusts.
+F-05  AI message drafting
+Campaign goal + audience context → Groq API generates personalized copy with {{first_name}}, {{last_product}}, {{days_since_purchase}} tokens injected at send time.
+F-06  Campaign creator UI
+Pick segment, channel (WhatsApp / SMS / Email), edit message, review audience, fire.
+F-07  Channel stub service
+Separate Express service deployed on Azure App Service. POST /send endpoint. Async outcome simulation (delivered / failed / opened / clicked). POST /api/receipts callback to CRM.
+F-08  Receipt ingestion API
+Idempotent event handler. Updates communication status in DB. Aggregates campaign-level counters.
+F-09  Campaign analytics dashboard
+Table of all campaigns with sent count, delivery rate, open rate, click rate, failure count. Color-coded status badges.
+F-10  Per-campaign drilldown
+List of all messages in the campaign with per-message status and timestamp of last event.
+
+6.2  Should-Have (v1.1 — post-submission roadmap)
+	•	F-11  Dynamic segments — audience counts auto-refresh when customer data changes
+	•	F-12  Saved segment views — name and store segment filters for reuse across campaigns
+	•	F-13  Engagement scoring badge — per-customer RFM score surfaced as a visual badge on the customer profile page
+	•	F-14  Trigger-based follow-up — auto-queue a follow-up message for delivered-but-not-opened comms after a configurable delay
+	•	F-15  Anomaly detection — AI surface flag when a campaign's open rate deviates >1.5σ from the account average
+	•	F-16  Send-time recommendation — channel-level heuristic for best time to send (e.g. WhatsApp at 6–8 PM)
+
+7. System Design Overview
+Component
+Technology
+Hosting
+CRM Frontend + API
+Next.js 14 (App Router)
+Azure Static Web Apps (GitHub Student Credit)
+Database
+PostgreSQL (Prisma ORM)
+Azure Database for PostgreSQL Flexible Server
+Channel Stub Service
+Express.js
+Azure App Service (Node.js) — always-on, no cold starts
+AI (intent + message drafting)
+Groq API — llama-3.3-70b-versatile
+Groq Cloud (free tier, ~30 req/min)
+Real-time events
+Socket.io
+Azure App Service WebSocket support
+
+Hosting note: All services are hosted on Microsoft Azure using the $100 GitHub Student Developer Pack credit. This eliminates cold-start latency seen on hobby tiers and gives consistent uptime for the callback loop.
+
+Key Design Decisions
+	•	Two-service split: CRM and channel stub are separate Azure App Service deployments, mirroring real-world separation of campaign orchestration from delivery infrastructure.
+	•	Idempotent receipts: the callback endpoint uses a (campaign_id, customer_id, event_type) unique constraint so duplicate events from retries are safe.
+	•	Exponential backoff in stub: failed callback retries use 1s → 2s → 4s → dead letter, making failure handling explicit and observable.
+	•	Groq over Anthropic: Groq's free tier offers ~500 RPD at zero cost. llama-3.3-70b-versatile provides excellent instruction-following for JSON-structured segment filter generation. At production scale, this swaps to a managed LLM gateway.
+	•	Scale tradeoff stated: the current design handles ~10K messages/campaign. At 1M+, the send pipeline would move to Azure Service Bus with consumer groups per channel.
+
+8. Data Model Summary
+Table
+Key Fields
+customers
+id, name, email, phone, channel_pref, lifecycle_stage, rfm_score, created_at
+orders
+id, customer_id, amount, product_name, created_at
+segments
+id, name, filter_json, is_dynamic, created_at
+campaigns
+id, name, segment_id, channel, message_template, status, sent_at
+communications
+id, campaign_id, customer_id, status, sent_at, delivered_at, opened_at, clicked_at
+comm_events
+id, communication_id, event_type, received_at (idempotency log)
+
+9. Success Metrics
+9.1  Product Performance Metrics
+Metric
+Target
+Source
+Time to create + fire a campaign
+< 5 minutes
+Demo walkthrough
+AI segment resolution accuracy (intent → correct filter)
+> 85% of test cases
+Manual eval
+Groq API response time (segment + message draft)
+< 2 seconds p95
+Dev tools network tab
+Callback receipt latency (stub → CRM update)
+< 3 seconds p95
+Local perf test
+Idempotency — duplicate events processed without double-count
+0 duplicate events in DB
+Integration test
+Campaign delivery rate (simulated)
+> 90% delivered
+Stub config
+
+10. Delivery Timeline
+Day
+Date
+Milestone
+D1
+Jun 10
+PRD complete. Prisma schema + seed data. Next.js project scaffold. Azure resources provisioned.
+D2
+Jun 11
+Channel stub service live on Azure App Service. CRM receipt API + callback loop working. Groq API key configured.
+D3
+Jun 12
+AI sidebar (segment intent + message draft via Groq). Campaign creator UI complete.
+D4
+Jun 13
+Analytics dashboard + per-campaign drilldown. Anomaly detection flag.
+D5
+Jun 14
+Polish, edge cases, deploy to Azure Static Web Apps. Walkthrough video recorded.
+D6
+Jun 15
+Final submission by 12 PM IST.
+
+11. Open Questions & Tradeoffs
+Question / Tradeoff
+Decision
+Which AI provider?
+Groq (free tier) with llama-3.3-70b-versatile. Near-zero latency, no cost. Swappable to GPT-4o or Gemini at production scale via an abstraction layer.
+How much autonomy should the AI have?
+AI suggests; marketer confirms. No campaign fires without explicit approval. Trust is built through transparency.
+Polling vs. WebSocket for live stats?
+WebSocket (socket.io) for real-time delivery events on the campaign drilldown page. Polling for summary dashboard refresh.
+How to handle the callback if CRM is down?
+Stub retries with exponential backoff up to 5 attempts, then dead-letters the event. Logged for manual replay.
+Azure vs Vercel/Railway?
+Azure used throughout to maximize the $100 GitHub Student credit. Azure Static Web Apps for Next.js frontend + App Service for the stub + PostgreSQL Flexible Server for DB — all under one subscription.
+At scale: what breaks first?
+The synchronous send loop. At 100K+ recipients, this moves to Azure Service Bus with worker processes per channel.
+
+
+End of Document — Reach PRD v1.1
+Confidential — Xeno Engineering Assignment 2026

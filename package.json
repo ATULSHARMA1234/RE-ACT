@@ -1,0 +1,15 @@
+{
+  "name": "reach-crm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "REACH — AI-Native Mini CRM for D2C Brands",
+  "author": "Atul",
+  "license": "MIT",
+  "scripts": {
+    "dev:crm": "pnpm --filter @reach/crm dev",
+    "dev:stub": "pnpm --filter @reach/channel-stub dev",
+    "dev": "pnpm run --parallel dev:crm dev:stub",
+    "build": "pnpm --filter @reach/crm build",
+    "lint": "pnpm --filter @reach/crm lint"
+  }
+}
