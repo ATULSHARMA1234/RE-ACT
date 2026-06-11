@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Button from "@/components/Button";
 import { Sparkles, Megaphone, CheckCircle2, ChevronRight, ChevronLeft, Send } from "lucide-react";
 
-export default function NewCampaignPage() {
+function NewCampaignPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [segments, setSegments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,17 @@ export default function NewCampaignPage() {
   const [channel, setChannel] = useState("EMAIL");
   const [goal, setGoal] = useState("");
   const [message, setMessage] = useState("");
+
+  // Auto-fill from search params
+  useEffect(() => {
+    const qGoal = searchParams.get("goal");
+    const qChannel = searchParams.get("channel");
+    const qName = searchParams.get("name");
+
+    if (qGoal) setGoal(qGoal);
+    if (qChannel) setChannel(qChannel.toUpperCase());
+    if (qName) setName(qName);
+  }, [searchParams]);
 
   useEffect(() => {
     fetch("/api/segments")
@@ -227,5 +239,19 @@ export default function NewCampaignPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function NewCampaignPage() {
+  return (
+    <Suspense fallback={
+      <AppShell>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="w-8 h-8 rounded-full border-2 border-brand-coral/30 border-t-brand-coral animate-spin" />
+        </div>
+      </AppShell>
+    }>
+      <NewCampaignPageContent />
+    </Suspense>
   );
 }

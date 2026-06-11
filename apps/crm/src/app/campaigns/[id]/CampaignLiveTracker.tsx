@@ -11,7 +11,7 @@ export default function CampaignLiveTracker({ initialCampaign }: { initialCampai
   
   useEffect(() => {
     // Connect to channel stub
-    const socketUrl = process.env.NEXT_PUBLIC_CHANNEL_STUB_URL || 'http://localhost:3001';
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
     const socket = io(socketUrl);
 
     socket.on('delivery_event', (event) => {

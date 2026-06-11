@@ -12,6 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import prisma from "@/lib/prisma";
+import ProactiveAdvisor from "@/components/ProactiveAdvisor";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,9 @@ export default async function DashboardPage() {
           icon={TrendingUp}
         />
       </div>
+
+      {/* AI Advisor / Co-Pilot */}
+      <ProactiveAdvisor />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

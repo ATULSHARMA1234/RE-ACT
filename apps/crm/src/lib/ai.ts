@@ -96,3 +96,37 @@ Rules:
 
   return content.trim();
 }
+
+/**
+ * Proactive AI Advisor — generates campaign recommendations based on database stats.
+ * Returns an array of campaign recommendation objects.
+ */
+export async function generateProactiveCampaigns(statsSummary: string) {
+  const systemPrompt = `You are REACH CRM's Proactive AI Marketing Advisor (Co-Pilot).
+Your task is to analyze the brand's current customer stats and recommend exactly 3 highly actionable, targeted marketing campaign ideas.
+
+For each idea, specify:
+1. title: A catchy name for the campaign (e.g., "Win Back Lapsed VIPs")
+2. reason: Why you are recommending this (refer to the stats provided, e.g., "We detected 24 high-value customers are in the DORMANT stage.")
+3. channel: Recommended channel (must be exactly: "EMAIL", "WHATSAPP", or "SMS")
+4. suggestedGoal: The instructions/goal to pass to the AI copywriter (e.g., "Win back dormant VIP customers with a special 20% loyalty discount code.")
+
+Return ONLY a JSON object containing a "recommendations" array with exactly 3 items. Do not return markdown, explanation, or code blocks.`;
+
+  const completion = await groq.chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Here is the current state of our CRM:\n${statsSummary}` },
+    ],
+    temperature: 0.7,
+    max_tokens: 800,
+    response_format: { type: "json_object" },
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) throw new Error("No response from Groq");
+
+  return JSON.parse(content);
+}
+
