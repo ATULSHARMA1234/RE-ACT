@@ -13,15 +13,19 @@ export async function POST(req: Request) {
     const text = await file.text();
     const rows = text.split('\n').filter(r => r.trim() !== '');
     
-    // Assume CSV format: name,email,phone,channel_pref,lifecycle_stage,rfm_score
+    // Updated CSV format: name,email,phone,channel_pref,lifecycle_stage,rfm_score,order_amount,order_product
     const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
     const dataRows = rows.slice(1);
 
     const customersToCreate = [];
 
     for (const row of dataRows) {
-      const columns = row.split(',').map(c => c.trim());
+      // Split by comma, but handle potential quotes (basic implementation)
+      const columns = row.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
       if (columns.length < 2) continue;
+
+      const orderAmount = columns[6] ? parseFloat(columns[6]) : null;
+      const orderProduct = columns[7] || null;
 
       customersToCreate.push({
         name: columns[0] || 'Unknown',
@@ -30,13 +34,16 @@ export async function POST(req: Request) {
         channel_pref: columns[3] || 'EMAIL',
         lifecycle_stage: columns[4] || 'NEW',
         rfm_score: columns[5] || 'LOW_VALUE',
+        orderAmount: !isNaN(orderAmount as number) ? orderAmount : null,
+        orderProduct: orderProduct
       });
     }
 
-    // Upsert to handle existing customers
+    // Upsert to handle existing customers and add their orders
     const results = [];
     for (const c of customersToCreate) {
       if (!c.email) continue;
+      
       const result = await prisma.customer.upsert({
         where: { email: c.email },
         update: {
@@ -46,8 +53,27 @@ export async function POST(req: Request) {
           lifecycle_stage: c.lifecycle_stage,
           rfm_score: c.rfm_score,
         },
-        create: c,
+        create: {
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          channel_pref: c.channel_pref,
+          lifecycle_stage: c.lifecycle_stage,
+          rfm_score: c.rfm_score,
+        },
       });
+
+      // If an order was provided in this row, attach it to the customer
+      if (c.orderAmount !== null && c.orderProduct !== null) {
+        await prisma.order.create({
+          data: {
+            customer_id: result.id,
+            amount: c.orderAmount,
+            product_name: c.orderProduct
+          }
+        });
+      }
+
       results.push(result);
     }
 

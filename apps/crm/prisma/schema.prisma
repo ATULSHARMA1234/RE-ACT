@@ -3,9 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model Customer {
@@ -88,3 +86,15 @@ model CommEvent {
   // Unique composite index for idempotency
   @@unique([communication_id, event_type])
 }
+
+model Settings {
+  id                    String   @id @default("singleton")
+  high_value_min_spend  Float    @default(10000.0)
+  high_value_min_orders Int      @default(5)
+  mid_tier_min_spend    Float    @default(3000.0)
+  mid_tier_min_orders   Int      @default(2)
+  at_risk_days          Int      @default(60)
+  dormant_days          Int      @default(120)
+  updated_at            DateTime @updatedAt
+}
+

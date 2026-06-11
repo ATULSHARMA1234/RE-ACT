@@ -9,6 +9,7 @@ import {
   BarChart3,
   Sparkles,
   Filter,
+  Settings,
 } from "lucide-react";
 
 const navItems = [
@@ -17,6 +18,7 @@ const navItems = [
   { href: "/segments", icon: Filter, label: "Segments" },
   { href: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { href: "/analytics", icon: BarChart3, label: "Analytics" },
+  { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function Sidebar() {
