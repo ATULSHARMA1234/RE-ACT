@@ -37,6 +37,12 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Segment ID is required" }, { status: 400 });
     }
 
+    // Check if segment is used in campaigns
+    const count = await prisma.campaign.count({ where: { segment_id: id } });
+    if (count > 0) {
+      return NextResponse.json({ error: "Cannot delete segment because it is used by existing campaigns." }, { status: 400 });
+    }
+
     await prisma.segment.delete({
       where: { id }
     });

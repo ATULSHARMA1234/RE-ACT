@@ -10,9 +10,9 @@ const config: Config = {
     extend: {
       colors: {
         ink: {
-          navy: '#0F1B2D',
-          dark: '#111F33',
-          border: '#1E2D3D',
+          navy: '#F0ECE3', // Soft airy background for sidebar instead of dark navy
+          dark: '#EBE8E3', 
+          border: 'rgba(0, 0, 0, 0.06)',
         },
         brand: {
           blue: '#1A73E8',
@@ -25,12 +25,12 @@ const config: Config = {
           amber: '#F59E0B',
         },
         surface: {
-          canvas: '#F8FAFC',
-          card: '#FFFFFF',
-          panel: '#F1F5F9',
+          canvas: 'transparent',
+          card: 'rgba(255, 255, 255, 0.5)',
+          panel: 'rgba(255, 255, 255, 0.3)',
         },
         border: {
-          DEFAULT: '#E2E8F0',
+          DEFAULT: 'rgba(0,0,0,0.06)', // Very soft borders
         },
         text: {
           primary: '#0F1B2D',

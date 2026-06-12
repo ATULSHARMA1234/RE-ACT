@@ -14,13 +14,16 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@xyflow/react": "^12.11.0",
     "groq-sdk": "^1.2.1",
     "lucide-react": "^1.17.0",
     "next": "14.2.35",
     "pg": "^8.21.0",
     "react": "^18",
     "react-dom": "^18",
-    "socket.io-client": "^4.8.3"
+    "recharts": "^3.8.1",
+    "socket.io-client": "^4.8.3",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
     "@types/node": "^20",

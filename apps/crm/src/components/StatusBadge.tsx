@@ -1,6 +1,7 @@
 type BadgeVariant =
   | "delivered"
   | "opened"
+  | "read"
   | "clicked"
   | "failed"
   | "pending"
@@ -25,6 +26,7 @@ interface StatusBadgeProps {
 const variantStyles: Record<BadgeVariant, string> = {
   delivered: "bg-status-success-bg text-status-success",
   opened: "bg-status-opened-bg text-status-opened",
+  read: "bg-purple-100 text-purple-700",
   clicked: "bg-status-clicked-bg text-status-clicked",
   failed: "bg-status-danger-bg text-status-danger",
   pending: "bg-status-warning-bg text-status-warning",

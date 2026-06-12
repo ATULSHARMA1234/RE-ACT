@@ -28,6 +28,11 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchSettings();
+    
+    // Listen for AI Copilot updates
+    const handleUpdate = () => fetchSettings();
+    window.addEventListener("crm-data-updated", handleUpdate);
+    return () => window.removeEventListener("crm-data-updated", handleUpdate);
   }, []);
 
   const fetchSettings = async () => {

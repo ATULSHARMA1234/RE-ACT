@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import StatusBadge from "@/components/StatusBadge";
 import { Sparkles, Users, Filter, X, ChevronRight, Save, Plus, ArrowRight, Trash2, Download } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function SegmentsPage() {
   const [filter, setFilter] = useState<any>({
@@ -87,7 +88,7 @@ export default function SegmentsPage() {
     } catch (e) {
       console.error(e);
     } finally {
-      setIsSaving(true);
+      setIsSaving(false);
     }
   };
 
@@ -96,11 +97,16 @@ export default function SegmentsPage() {
     if (!confirm("Are you sure you want to delete this segment?")) return;
     try {
       const res = await fetch(`/api/segments?id=${id}`, { method: "DELETE" });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         fetchSavedSegments();
+        toast.success("Segment deleted");
+      } else {
+        toast.error(data.error || "Failed to delete segment");
       }
     } catch (e) {
       console.error(e);
+      toast.error("An error occurred");
     }
   };
 

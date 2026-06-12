@@ -10,6 +10,8 @@ export async function POST(req: Request) {
     const lastNames = ["Sharma", "Verma", "Patel", "Singh", "Gupta", "Kumar", "Desai", "Rao", "Joshi", "Malhotra", "Kapoor", "Chawla", "Mehta", "Bhatia", "Reddy"];
     const domains = ["example.com", "gmail.com", "yahoo.com", "company.in"];
     const channels = ["EMAIL", "WHATSAPP", "SMS"];
+    const cities = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose"];
+    const states = ["NY", "CA", "IL", "TX", "AZ", "PA", "TX", "CA", "TX", "CA"];
 
     const products = [
       { name: "Summer Dress", min: 1000, max: 3000 },
@@ -46,6 +48,41 @@ export async function POST(req: Request) {
       
       const currentBatchSize = Math.min(BATCH_SIZE, TOTAL_CUSTOMERS - batchStart);
 
+      // Create dummy campaigns ONLY in the first batch to avoid creating them multiple times
+      let mockCampaigns: { id: string, channel: string }[] = [];
+      if (batchStart === 0) {
+        const segmentId = crypto.randomUUID();
+        await prisma.segment.create({
+          data: {
+            id: segmentId,
+            name: "All Customers (Demo)",
+            filter_json: { type: "ALL" },
+            is_dynamic: true
+          }
+        });
+
+        const campaignChannels = ["EMAIL", "SMS", "WHATSAPP"];
+        for (const channel of campaignChannels) {
+          const cid = crypto.randomUUID();
+          await prisma.campaign.create({
+            data: {
+              id: cid,
+              name: `Summer Promo - ${channel}`,
+              segment_id: segmentId,
+              channel: channel,
+              message_template: "Hey there! Get 20% off our new summer collection.",
+              status: "SENT",
+              sent_at: new Date(Date.now() - randomInt(1, 14) * 24 * 60 * 60 * 1000)
+            }
+          });
+          mockCampaigns.push({ id: cid, channel });
+        }
+      } else {
+        // Fetch existing campaigns for subsequent batches
+        const existingCampaigns = await prisma.campaign.findMany({ select: { id: true, channel: true } });
+        mockCampaigns = existingCampaigns.map(c => ({ id: c.id, channel: c.channel }));
+      }
+
       for (let i = 0; i < currentBatchSize; i++) {
         const customerId = crypto.randomUUID(); // Pre-generate ID for relational mapping
         
@@ -55,11 +92,17 @@ export async function POST(req: Request) {
         // Add random uuid to email to guarantee uniqueness at 500k scale
         const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${crypto.randomUUID().split('-')[0]}@${randomItem(domains)}`;
         
+        const cityIndex = randomInt(0, cities.length - 1);
+        const city = cities[cityIndex];
+        const state = states[cityIndex];
+
         customersBatch.push({
           id: customerId,
           name,
           email,
-          phone: `+9198${randomInt(10000000, 99999999)}`,
+          phone: `+1${randomInt(200, 999)}${randomInt(1000000, 9999999)}`,
+          city,
+          state,
           channel_pref: randomItem(channels),
           lifecycle_stage: "NEW", // Will be recalculated by the engine later
           rfm_score: "LOW_VALUE", 
@@ -77,12 +120,17 @@ export async function POST(req: Request) {
           const orderDate = new Date(lastOrderDate);
           orderDate.setDate(orderDate.getDate() - (j * randomInt(10, 40)));
 
+          // Randomly attribute ~25% of orders to one of the dummy campaigns
+          const isAttributed = Math.random() > 0.75;
+          const attributedCampaign = isAttributed && mockCampaigns.length > 0 ? randomItem(mockCampaigns) : null;
+
           ordersBatch.push({
             id: crypto.randomUUID(),
             customer_id: customerId,
             amount: randomInt(product.min, product.max),
             product_name: product.name,
-            created_at: orderDate
+            created_at: orderDate,
+            attributed_campaign_id: attributedCampaign ? attributedCampaign.id : null
           });
         }
       }
@@ -100,7 +148,7 @@ export async function POST(req: Request) {
     console.log("Massive seeding complete.");
     return NextResponse.json({ success: true, message: `Successfully seeded ${TOTAL_CUSTOMERS.toLocaleString()} mock customers.` });
   } catch (error: any) {
-    console.error("Database Mass Seed Error:", error);
-    return NextResponse.json({ error: "Failed to mass seed database" }, { status: 500 });
+    console.error("Database Mass Seed Error details:", error.message, error.stack);
+    return NextResponse.json({ error: "Failed to mass seed database", details: error.message }, { status: 500 });
   }
 }

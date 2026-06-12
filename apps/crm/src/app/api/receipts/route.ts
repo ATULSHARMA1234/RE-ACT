@@ -41,8 +41,10 @@ export async function POST(req: Request) {
 
     const eventDate = timestamp ? new Date(timestamp) : new Date();
 
-    if (event_type === 'DELIVERED') updateData.delivered_at = eventDate;
+    if (event_type === 'SENT') updateData.sent_at = eventDate;
+    else if (event_type === 'DELIVERED') updateData.delivered_at = eventDate;
     else if (event_type === 'OPENED') updateData.opened_at = eventDate;
+    else if (event_type === 'READ') { /* READ updates status but has no dedicated timestamp column */ }
     else if (event_type === 'CLICKED') updateData.clicked_at = eventDate;
     else if (event_type === 'FAILED') updateData.failed_at = eventDate;
 

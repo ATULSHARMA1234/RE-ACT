@@ -105,18 +105,27 @@ export async function POST(req: Request) {
     // 5. Fire async request to channel stub
     const stubUrl = process.env.CHANNEL_STUB_URL || 'http://localhost:3001';
     
-    // Fire and forget (don't await the response here to avoid blocking, though typically you'd put this in a job queue)
-    fetch(`${stubUrl}/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ communications: payloadForStub })
-    }).catch(err => console.error("Failed to call channel stub:", err));
+    try {
+      const stubRes = await fetch(`${stubUrl}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ communications: payloadForStub })
+      });
 
-    // Update campaign status
-    await prisma.campaign.update({
-      where: { id: campaign.id },
-      data: { status: "SENT" }
-    });
+      if (stubRes.ok) {
+        // Stub accepted the batch — mark campaign as SENT
+        await prisma.campaign.update({
+          where: { id: campaign.id },
+          data: { status: "SENT" }
+        });
+      } else {
+        // Stub rejected or errored — keep as SENDING so it can be retried
+        console.error(`Channel stub responded with ${stubRes.status}`);
+      }
+    } catch (err) {
+      // Stub is unreachable — keep as SENDING 
+      console.error("Failed to call channel stub:", err);
+    }
 
     return NextResponse.json({ success: true, campaign_id: campaign.id, recipient_count: customers.length });
 

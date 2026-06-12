@@ -16,7 +16,7 @@ function NewCampaignPageContent() {
   // Form state
   const [name, setName] = useState("");
   const [segmentId, setSegmentId] = useState("");
-  const [channel, setChannel] = useState("EMAIL");
+  const [channels, setChannels] = useState<string[]>(["EMAIL"]);
   const [goal, setGoal] = useState("");
   const [message, setMessage] = useState("");
 
@@ -27,7 +27,7 @@ function NewCampaignPageContent() {
     const qName = searchParams.get("name");
 
     if (qGoal) setGoal(qGoal);
-    if (qChannel) setChannel(qChannel.toUpperCase());
+    if (qChannel) setChannels(qChannel.split(",").map(c => c.trim().toUpperCase()));
     if (qName) setName(qName);
   }, [searchParams]);
 
@@ -49,7 +49,7 @@ function NewCampaignPageContent() {
         body: JSON.stringify({
           campaignGoal: goal,
           audienceDescription: selectedSeg?.name || "Selected Segment",
-          channel
+          channel: channels.join(", ")
         })
       });
       const data = await res.json();
@@ -71,7 +71,7 @@ function NewCampaignPageContent() {
         body: JSON.stringify({
           name,
           segment_id: segmentId,
-          channel,
+          channel: channels.join(", "),
           message_template: message
         })
       });
@@ -163,8 +163,16 @@ function NewCampaignPageContent() {
                   {['EMAIL', 'WHATSAPP', 'SMS'].map(ch => (
                     <button
                       key={ch}
-                      onClick={() => setChannel(ch)}
-                      className={`flex-1 py-3 border rounded-lg font-medium transition-colors ${channel === ch ? 'border-brand-blue bg-brand-blue/5 text-brand-blue' : 'border-border hover:bg-surface-panel text-text-secondary'}`}
+                      onClick={() => {
+                        if (channels.includes(ch)) {
+                          if (channels.length > 1) {
+                            setChannels(channels.filter(c => c !== ch));
+                          }
+                        } else {
+                          setChannels([...channels, ch]);
+                        }
+                      }}
+                      className={`flex-1 py-3 border rounded-lg font-medium transition-colors ${channels.includes(ch) ? 'border-brand-blue bg-brand-blue/5 text-brand-blue' : 'border-border hover:bg-surface-panel text-text-secondary'}`}
                     >
                       {ch}
                     </button>
@@ -219,7 +227,7 @@ function NewCampaignPageContent() {
                   <div className="col-span-2 font-medium">{segments.find(s => s.id === segmentId)?.name}</div>
                   
                   <div className="text-text-secondary">Channel</div>
-                  <div className="col-span-2 font-medium">{channel}</div>
+                  <div className="col-span-2 font-medium">{channels.join(", ")}</div>
                 </div>
 
                 <div className="pt-4 border-t border-border">

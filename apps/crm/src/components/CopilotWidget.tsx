@@ -18,8 +18,8 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   action?: {
-    type: "SEGMENT" | "CAMPAIGN";
-    data: Record<string, unknown>;
+    type: string;
+    data: any;
   };
 }
 
@@ -109,19 +109,51 @@ export default function CopilotWidget() {
     }
   };
 
-  const handleActionClick = (action: Message["action"]) => {
+  const handleActionClick = async (action: Message["action"]) => {
     if (!action) return;
-    setIsOpen(false); // Close widget when taking action to let user see the new page
-    if (action.type === "CAMPAIGN") {
-      const d = action.data as { name?: string; channel?: string; goal?: string };
-      const params = new URLSearchParams({
-        name: d.name || "",
-        channel: d.channel || "EMAIL",
-        goal: d.goal || "",
+    
+    setLoading(true);
+    try {
+      // Use the old endpoint for legacy actions, or the new execute-tool endpoint for Tool Calls
+      const endpoint = action.type === "TOOL_CALL" ? "/api/ai/execute-tool" : "/api/ai/voice-agent/execute";
+      const payload = action.type === "TOOL_CALL" ? { tool_name: action.tool_name, payload: action.data } : { action: action.type, payload: action.data };
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
-      router.push(`/campaigns/new?${params.toString()}`);
-    } else if (action.type === "SEGMENT") {
-      router.push("/segments");
+      const data = await res.json();
+      
+      if (data.success) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.message || "Action completed successfully!" }
+        ]);
+        if (data.route) {
+          setTimeout(() => {
+            setIsOpen(false);
+            router.push(data.route);
+          }, 1500);
+        } else {
+          // Force Next.js to refresh server components so the UI updates to reflect DB changes
+          router.refresh();
+          // Notify client components (like Settings) to re-fetch their data
+          window.dispatchEvent(new Event("crm-data-updated"));
+        }
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.error || "Failed to execute the action." }
+        ]);
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Execution failed due to a network error." }
+      ]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -138,17 +170,39 @@ export default function CopilotWidget() {
   return (
     <>
       {/* Floating Action Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 z-50 ${
-          isOpen 
-            ? 'bg-surface-panel text-text-primary rotate-90 scale-90 border border-border' 
-            : 'bg-gradient-to-br from-brand-coral to-brand-blue text-white hover:scale-105 hover:shadow-brand-blue/30'
-        }`}
-        aria-label="Toggle REACH Co-Pilot"
-      >
-        {isOpen ? <X size={24} className="-rotate-90" /> : <Sparkles size={24} />}
-      </button>
+      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 group">
+        
+        {/* Tooltip */}
+        <div className={`
+          transition-all duration-300 pointer-events-none
+          bg-surface-card border border-border text-text-primary px-3 py-1.5 rounded-full text-[11px] font-bold tracking-widest shadow-sm
+          flex items-center gap-1.5
+          ${isOpen ? 'opacity-0 translate-x-4 scale-95' : 'opacity-100 translate-x-0 scale-100'}
+        `}>
+          ASK AI <ArrowRight size={12} strokeWidth={2.5} />
+        </div>
+
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`relative shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:-translate-y-1 ${
+            isOpen 
+              ? 'w-14 h-14 rounded-full bg-surface-panel text-text-primary rotate-90 scale-90 border border-border' 
+              : 'w-14 h-14 bg-transparent border-none outline-none'
+          }`}
+          aria-label="Toggle REACH Co-Pilot"
+        >
+          {isOpen ? <X size={24} className="-rotate-90" /> : (
+            <span 
+              className="text-[42px] leading-none select-none drop-shadow-2xl filter"
+              style={{ filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' }}
+              role="img" 
+              aria-label="Lipstick"
+            >
+              💄
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* Floating Chat Window */}
       {isOpen && (
@@ -229,25 +283,83 @@ export default function CopilotWidget() {
 
                   {/* Action Card */}
                   {msg.action && (
-                    <button
-                      onClick={() => handleActionClick(msg.action)}
-                      className="flex items-center gap-2 px-3 py-2 bg-white border border-brand-coral/30 hover:border-brand-coral hover:bg-brand-coral/5 rounded-xl text-brand-coral font-medium text-[12px] transition-all shadow-sm group w-full text-left leading-tight"
-                    >
-                      {msg.action.type === "SEGMENT" ? (
-                        <Filter size={14} className="shrink-0" />
+                    <div className="w-full mt-2 space-y-2">
+                      {msg.action.type === "TOOL_CALL" ? (
+                        <div className="bg-white border border-brand-coral/30 rounded-xl p-3 shadow-sm w-full">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Sparkles size={14} className="text-brand-coral" />
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">Proposed Action</span>
+                          </div>
+                          <div className="bg-surface-canvas rounded-lg p-3 border border-border mb-3 text-[12px] text-text-primary">
+                            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/50">
+                              <span className="font-semibold capitalize text-brand-blue">
+                                {msg.action.tool_name.replace(/_/g, ' ')}
+                              </span>
+                            </div>
+                            <div className="space-y-1.5">
+                              {Object.entries(msg.action.data || {}).map(([k, v]) => {
+                                let displayValue = String(v);
+                                let displayKey = k.replace(/_/g, ' ');
+                                
+                                if (k === "args" && typeof v === "string") {
+                                  displayKey = "Updates";
+                                  try {
+                                    const parsed = JSON.parse(v);
+                                    const payload = parsed.data || parsed;
+                                    displayValue = Object.entries(payload).map(([pk, pv]) => `${pk.replace(/_/g, ' ')} → ${pv}`).join(', ');
+                                  } catch (e) {}
+                                }
+                                
+                                return (
+                                  <div key={k} className="flex justify-between items-start gap-4">
+                                    <span className="text-text-secondary capitalize shrink-0">{displayKey}:</span>
+                                    <span className="text-text-primary font-medium text-right truncate" title={displayValue}>
+                                      {displayValue}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleActionClick(msg.action)}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-brand-coral text-white hover:bg-[#ff5d4b] rounded-lg text-[12px] font-bold transition-all shadow-sm"
+                          >
+                            Confirm & Execute <ArrowRight size={12} />
+                          </button>
+                        </div>
                       ) : (
-                        <Megaphone size={14} className="shrink-0" />
+                        <button
+                          onClick={() => handleActionClick(msg.action)}
+                          className="flex items-center gap-2 px-3 py-2 bg-white border border-brand-coral/30 hover:border-brand-coral hover:bg-brand-coral/5 rounded-xl text-brand-coral font-medium text-[12px] transition-all shadow-sm group w-full text-left leading-tight"
+                        >
+                          {msg.action.type === "CREATE_SEGMENT" ? (
+                            <Filter size={14} className="shrink-0" />
+                          ) : msg.action.type === "CREATE_CAMPAIGN" ? (
+                            <Megaphone size={14} className="shrink-0" />
+                          ) : (
+                            <Sparkles size={14} className="shrink-0" />
+                          )}
+                          <span>
+                            {msg.action.type === "CREATE_SEGMENT"
+                              ? "Create Segment"
+                              : msg.action.type === "CREATE_CAMPAIGN"
+                              ? "Create Campaign"
+                              : msg.action.type === "CREATE_WORKFLOW"
+                              ? "Create Workflow"
+                              : msg.action.type === "PAUSE_CAMPAIGN"
+                              ? "Pause Campaign"
+                              : msg.action.type === "NAVIGATE"
+                              ? `Go to ${msg.action.data.page}`
+                              : "Execute Action"}
+                          </span>
+                          <ArrowRight
+                            size={12}
+                            className="ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform"
+                          />
+                        </button>
                       )}
-                      <span>
-                        {msg.action.type === "SEGMENT"
-                          ? "Open Segment Builder"
-                          : "Create this Campaign"}
-                      </span>
-                      <ArrowRight
-                        size={12}
-                        className="ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform"
-                      />
-                    </button>
+                    </div>
                   )}
                 </div>
               </div>

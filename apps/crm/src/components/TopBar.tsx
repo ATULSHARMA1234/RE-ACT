@@ -25,7 +25,7 @@ export default function TopBar() {
   };
 
   return (
-    <header className="h-topbar bg-surface-card border-b border-border flex items-center justify-between px-8 sticky top-0 z-40">
+    <header className="h-topbar bg-white/40 backdrop-blur-2xl border-b border-white/60 flex items-center justify-between px-8 sticky top-0 z-40">
       <div>
         <h1 className="text-h1 font-display text-text-primary">{getTitle()}</h1>
       </div>

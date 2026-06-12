@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import StatCard from "@/components/StatCard";
 import StatusBadge from "@/components/StatusBadge";
@@ -11,43 +14,63 @@ import {
   Plus,
   ArrowRight,
 } from "lucide-react";
-import prisma from "@/lib/prisma";
 import ProactiveAdvisor from "@/components/ProactiveAdvisor";
+import ConversionFunnelChart from "@/components/dashboard/ConversionFunnelChart";
+import CampaignHeatmap from "@/components/dashboard/CampaignHeatmap";
+import RevenueAttributionMatrix from "@/components/dashboard/RevenueAttributionMatrix";
+import SentimentAnalysisFeed from "@/components/dashboard/SentimentAnalysisFeed";
+import ChannelPerformanceWidget from "@/components/dashboard/ChannelPerformanceWidget";
+import Customer360Drawer from "@/components/customers/Customer360Drawer";
 
-export const dynamic = "force-dynamic";
-
-async function getDashboardStats() {
-  const [customerCount, campaignCount, commCount, deliveredCount] =
-    await Promise.all([
-      prisma.customer.count(),
-      prisma.campaign.count(),
-      prisma.communication.count(),
-      prisma.communication.count({ where: { status: "DELIVERED" } }),
-    ]);
-
-  const deliveryRate =
-    commCount > 0 ? ((deliveredCount / commCount) * 100).toFixed(1) : "0";
-
-  return { customerCount, campaignCount, commCount, deliveryRate };
+interface DashboardClientProps {
+  stats: {
+    customerCount: number;
+    campaignCount: number;
+    commCount: number;
+    deliveryRate: string;
+  };
+  recentCampaigns: any[];
 }
 
-async function getRecentCampaigns() {
-  return prisma.campaign.findMany({
-    take: 5,
-    orderBy: { created_at: "desc" },
-    include: {
-      segment: { select: { name: true } },
-      _count: { select: { communications: true } },
-    },
-  });
-}
+export default function DashboardClient({ stats, recentCampaigns }: DashboardClientProps) {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>();
 
-export default async function DashboardPage() {
-  const stats = await getDashboardStats();
-  const recentCampaigns = await getRecentCampaigns();
+  const openCustomer360 = (id?: string) => {
+    setSelectedCustomerId(id);
+    setIsDrawerOpen(true);
+  };
 
   return (
     <AppShell>
+      {/* Customer 360 Drawer */}
+      <Customer360Drawer 
+        isOpen={isDrawerOpen} 
+        onClose={() => setIsDrawerOpen(false)} 
+        customerId={selectedCustomerId}
+      />
+
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-display font-display font-bold text-text-primary tracking-tight">
+            Dashboard
+          </h1>
+          <p className="text-body text-text-secondary mt-1">
+            Welcome back to your neural command center.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => openCustomer360("mock")}>
+            <Users size={16} className="mr-2 inline" /> Test Customer 360
+          </Button>
+          <Link href="/campaigns/new">
+            <Button className="flex items-center gap-2">
+              <Plus size={16} /> New Campaign
+            </Button>
+          </Link>
+        </div>
+      </div>
+
       {/* Stat Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
@@ -73,66 +96,27 @@ export default async function DashboardPage() {
       </div>
 
       {/* AI Advisor / Co-Pilot */}
-      <ProactiveAdvisor />
+      <div className="mb-8">
+        <ProactiveAdvisor />
+      </div>
 
-      {/* Quick Actions */}
+      {/* Data Visualization Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <ConversionFunnelChart />
+        <CampaignHeatmap />
+      </div>
+
+      {/* AI & Predictive Integrations Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <Link
-          href="/campaigns/new"
-          className="bg-surface-card border border-border rounded-lg p-6 shadow-card hover:shadow-card-hover transition-all duration-150 group"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-brand-coral/10 flex items-center justify-center text-brand-coral group-hover:bg-brand-coral group-hover:text-white transition-colors">
-              <Plus size={24} strokeWidth={1.5} />
-            </div>
-            <div>
-              <h3 className="text-h2 font-display font-semibold">
-                New Campaign
-              </h3>
-              <p className="text-small text-text-secondary">
-                Create and launch a targeted campaign
-              </p>
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href="/segments"
-          className="bg-surface-card border border-border rounded-lg p-6 shadow-card hover:shadow-card-hover transition-all duration-150 group"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-brand-blue/10 flex items-center justify-center text-brand-blue group-hover:bg-brand-blue group-hover:text-white transition-colors">
-              <Users size={24} strokeWidth={1.5} />
-            </div>
-            <div>
-              <h3 className="text-h2 font-display font-semibold">
-                Build Segment
-              </h3>
-              <p className="text-small text-text-secondary">
-                AI or manual audience builder
-              </p>
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href="/customers"
-          className="bg-surface-card border border-border rounded-lg p-6 shadow-card hover:shadow-card-hover transition-all duration-150 group"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-brand-green/10 flex items-center justify-center text-brand-green group-hover:bg-brand-green group-hover:text-white transition-colors">
-              <TrendingUp size={24} strokeWidth={1.5} />
-            </div>
-            <div>
-              <h3 className="text-h2 font-display font-semibold">
-                View Customers
-              </h3>
-              <p className="text-small text-text-secondary">
-                Browse and search your audience
-              </p>
-            </div>
-          </div>
-        </Link>
+        <div className="lg:col-span-1 h-[400px]">
+          <RevenueAttributionMatrix />
+        </div>
+        <div className="lg:col-span-1 h-[400px]">
+          <SentimentAnalysisFeed />
+        </div>
+        <div className="lg:col-span-1 h-[400px]">
+          <ChannelPerformanceWidget />
+        </div>
       </div>
 
       {/* Recent Campaigns Table */}
@@ -182,19 +166,19 @@ export default async function DashboardPage() {
                 {recentCampaigns.map((campaign) => (
                   <tr
                     key={campaign.id}
-                    className="border-b border-border last:border-0 hover:bg-surface-panel/50 transition-colors"
+                    className="border-b border-border last:border-0 hover:bg-surface-panel/50 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4 text-body font-medium">
                       {campaign.name}
                     </td>
                     <td className="px-6 py-4 text-body text-text-secondary">
-                      {campaign.segment.name}
+                      {campaign.segment?.name || "All"}
                     </td>
                     <td className="px-6 py-4">
                       <StatusBadge variant="new">{campaign.channel}</StatusBadge>
                     </td>
                     <td className="px-6 py-4 text-body text-text-secondary">
-                      {campaign._count.communications}
+                      {campaign._count?.communications || 0}
                     </td>
                     <td className="px-6 py-4">
                       <StatusBadge

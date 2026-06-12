@@ -35,7 +35,7 @@ interface EventPayload {
   communication_id: string;
   customer_id: string;
   campaign_id: string;
-  event_type: 'DELIVERED' | 'OPENED' | 'CLICKED' | 'FAILED';
+  event_type: 'SENT' | 'DELIVERED' | 'OPENED' | 'READ' | 'CLICKED' | 'FAILED';
   timestamp: string;
 }
 
@@ -66,11 +66,8 @@ async function sendReceipt(payload: EventPayload, attempt = 1): Promise<void> {
   }
 }
 
-// Async callback engine
+// Async callback engine — models full communication lifecycle
 function scheduleEvents(comm: CommPayload) {
-  const now = new Date();
-  
-  // Base event payload generator
   const createEvent = (type: EventPayload['event_type'], delayMs: number) => {
     setTimeout(() => {
       sendReceipt({
@@ -83,27 +80,32 @@ function scheduleEvents(comm: CommPayload) {
     }, delayMs);
   };
 
-  // Simulate delivery probability (90% success)
+  // Step 1: SENT — always fires immediately (message accepted for delivery)
+  createEvent('SENT', 200 + Math.random() * 300);
+
+  // Step 2: DELIVERED or FAILED (90% success rate)
   const isDelivered = Math.random() < 0.90;
-  
   if (!isDelivered) {
-    createEvent('FAILED', 500 + Math.random() * 1000); // Fail within 0.5-1.5s
+    createEvent('FAILED', 800 + Math.random() * 1500);
     return;
   }
-
-  // Delivered within 1-3 seconds
   createEvent('DELIVERED', 1000 + Math.random() * 2000);
 
-  // If delivered, 40% chance of being opened within 3-8 seconds
+  // Step 3: OPENED (40% of delivered)
   const isOpened = Math.random() < 0.40;
-  if (isOpened) {
-    createEvent('OPENED', 3000 + Math.random() * 5000);
+  if (!isOpened) return;
+  createEvent('OPENED', 3000 + Math.random() * 5000);
 
-    // If opened, 20% chance of being clicked within 8-15 seconds
-    const isClicked = Math.random() < 0.20;
-    if (isClicked) {
-      createEvent('CLICKED', 8000 + Math.random() * 7000);
-    }
+  // Step 4: READ (70% of opened — user actually reads the content)
+  const isRead = Math.random() < 0.70;
+  if (isRead) {
+    createEvent('READ', 5000 + Math.random() * 4000);
+  }
+
+  // Step 5: CLICKED (20% of opened — user clicks a CTA link)
+  const isClicked = Math.random() < 0.20;
+  if (isClicked) {
+    createEvent('CLICKED', 8000 + Math.random() * 7000);
   }
 }
 

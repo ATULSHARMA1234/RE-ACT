@@ -11,6 +11,8 @@ model Customer {
   name            String
   email           String   @unique
   phone           String?
+  city            String?
+  state           String?
   channel_pref    String   @default("EMAIL") // EMAIL, WHATSAPP, SMS
   lifecycle_stage String   @default("NEW") // NEW, ACTIVE, AT_RISK, DORMANT
   rfm_score       String? // HIGH_VALUE, MID_TIER, LOW_VALUE
@@ -29,6 +31,9 @@ model Order {
   created_at   DateTime @default(now())
 
   customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  
+  attributed_campaign_id String?
+  attributed_campaign    Campaign? @relation(fields: [attributed_campaign_id], references: [id], onDelete: SetNull)
 }
 
 model Segment {
@@ -55,13 +60,14 @@ model Campaign {
 
   segment        Segment         @relation(fields: [segment_id], references: [id])
   communications Communication[]
+  attributed_orders Order[]
 }
 
 model Communication {
   id           String    @id @default(cuid())
   campaign_id  String
   customer_id  String
-  status       String    @default("PENDING") // PENDING, DELIVERED, OPENED, CLICKED, FAILED
+  status       String    @default("PENDING") // PENDING, SENT, DELIVERED, OPENED, READ, CLICKED, FAILED
   sent_at      DateTime?
   delivered_at DateTime?
   opened_at    DateTime?
@@ -98,3 +104,11 @@ model Settings {
   updated_at            DateTime @updatedAt
 }
 
+model Workflow {
+  id         String   @id @default(cuid())
+  name       String
+  status     String   @default("DRAFT") // DRAFT, ACTIVE, PAUSED
+  nodes_json Json     // The array of configured nodes
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}

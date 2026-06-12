@@ -130,3 +130,141 @@ Return ONLY a JSON object containing a "recommendations" array with exactly 3 it
   return JSON.parse(content);
 }
 
+/**
+ * AI Text-to-Workflow Generator
+ * Generates structured React Flow nodes and edges from a natural language prompt.
+ */
+export async function generateWorkflowNodes(prompt: string) {
+  const systemPrompt = `You are REACH CRM's Workflow AI Architect. Your job is to convert a natural language description of an automation campaign into a structured React Flow JSON object.
+
+Valid Custom Node Types:
+1. 'triggerNode' - Event Source (e.g., Cart Abandoned, Joined Segment). Config: { condition: string, value?: string }
+2. 'delayNode' - Wait Time (e.g., 2 Hours). Config: { time: string }
+3. 'splitNode' - Branch (e.g., A/B Test, Check Segment). Config: { split_type: string, percentage?: number, condition_segment_id?: string }
+4. 'messageNode' - Communication (e.g., Email, SMS). Config: { channel: string, content: string }
+5. 'actionNode' - Tag/Update Profile (e.g., VIP tag). Config: { tag_name: string }
+
+Rules:
+- The first node MUST be a 'triggerNode'.
+- Each node must have a unique string 'id' (e.g., 'dndnode_1', 'dndnode_2').
+- 'position' must be { x: number, y: number }. Space nodes out vertically (e.g. y = 50, 150, 250).
+- 'data' must contain: { originalType: string, config: object }. The originalType is "trigger", "delay", "split", "message", or "action".
+- Edges must connect nodes. An edge is { id: string, source: string, target: string }.
+- Return ONLY a JSON object containing { "nodes": [], "edges": [] }. No markdown, no extra text.`;
+
+  const completion = await groq.chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Create a workflow for: ${prompt}` },
+    ],
+    temperature: 0.2,
+    max_tokens: 1500,
+    response_format: { type: "json_object" },
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) throw new Error("No response from Groq");
+
+  return JSON.parse(content);
+}
+
+/**
+ * AI Voice Command Parser
+ * Takes a natural language transcript and maps it to a strict Action Schema.
+ */
+export async function parseVoiceCommand(transcript: string) {
+  const systemPrompt = `You are the REACH CRM Agentic Copilot. Your job is to parse a user's voice command and map it to a specific actionable intent.
+
+Available Actions:
+1. CREATE_WORKFLOW
+   - user wants to build/create an automated sequence/workflow.
+   - extract: 'name' (string), 'prompt' (string: detailed description of what it should do).
+2. CREATE_SEGMENT
+   - user wants to create an audience segment.
+   - extract: 'name' (string), 'description' (string: who is in this segment).
+3. CREATE_CAMPAIGN
+   - user wants to draft/create a marketing campaign.
+   - extract: 'name' (string), 'channel' (string: e.g. "EMAIL", "WHATSAPP", "SMS", or multiple comma-separated like "EMAIL, SMS"), 'target_audience' (string: who should receive it), 'goal' (string: what the message should say).
+4. PAUSE_CAMPAIGN
+   - user wants to pause or stop a campaign.
+   - extract: 'campaign_name' (string: the name or a fuzzy description of the campaign to pause).
+5. QUERY_DATA
+   - user asks a question about their metrics or data (e.g. "how many VIP customers do we have?").
+   - extract: 'question' (string: the exact question asked).
+6. NAVIGATE
+   - user just wants to view a page (e.g. "go to dashboard", "show customers").
+   - extract: 'page' (string: "dashboard", "workflows", "campaigns", "customers", "settings").
+
+Rules:
+- Return ONLY a JSON object containing { "action": "ACTION_NAME", "payload": { ... } }.
+- If the user says "build a workflow that sends a message to inactive members", map to CREATE_WORKFLOW with prompt="sends a message to inactive members".
+- Do not add markdown or explanation.`;
+
+  const completion = await groq.chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Voice transcript: "${transcript}"` },
+    ],
+    temperature: 0.1,
+    max_tokens: 500,
+    response_format: { type: "json_object" },
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) throw new Error("No response from Groq");
+
+  return JSON.parse(content);
+}
+
+/**
+ * AI Data Analyst
+ * Takes a context string (database summary) and a user's question, and returns a natural language answer.
+ */
+export async function queryDataAI(contextStr: string, question: string) {
+  const systemPrompt = `You are the REACH CRM Data Analyst. You are given a summary of the current database state as context.
+Answer the user's question accurately using ONLY the provided context. 
+Keep your answer short, conversational, and direct (1-2 sentences), because it will be spoken out loud via Text-to-Speech to the user.`;
+
+  const completion = await groq.chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Context:\n${contextStr}\n\nQuestion: ${question}` },
+    ],
+    temperature: 0.1,
+    max_tokens: 150,
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) throw new Error("No response from Groq");
+
+  return content.trim();
+}
+
+/**
+ * AI Attribution Analyst
+ * Takes aggregated campaign revenue metrics and generates a 2-sentence actionable insight.
+ */
+export async function generateAttributionInsight(statsSummary: string) {
+  const systemPrompt = `You are the REACH CRM Chief Marketing Officer (AI).
+Analyze the provided Revenue Attribution metrics.
+Write a 2-sentence actionable insight highlighting the best performing channel by ROI/Revenue and recommending a budget shift or strategy adjustment.
+Keep it punchy, professional, and data-driven. Do not use markdown formatting.`;
+
+  const completion = await groq.chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Metrics:\n${statsSummary}` },
+    ],
+    temperature: 0.4,
+    max_tokens: 150,
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) throw new Error("No response from Groq");
+
+  return content.trim();
+}

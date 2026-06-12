@@ -52,6 +52,7 @@ export default async function CampaignsPage() {
                   <th className="text-left text-small font-semibold text-text-secondary px-6 py-3 uppercase tracking-wide">Sent At</th>
                   <th className="text-left text-small font-semibold text-text-secondary px-6 py-3 uppercase tracking-wide">Sent</th>
                   <th className="text-left text-small font-semibold text-text-secondary px-6 py-3 uppercase tracking-wide">Delivered</th>
+                  <th className="text-left text-small font-semibold text-text-secondary px-6 py-3 uppercase tracking-wide">Opened</th>
                   <th className="text-left text-small font-semibold text-text-secondary px-6 py-3 uppercase tracking-wide">Status</th>
                   <th className="text-left text-small font-semibold text-text-secondary px-6 py-3 uppercase tracking-wide"></th>
                 </tr>
@@ -59,8 +60,10 @@ export default async function CampaignsPage() {
               <tbody>
                 {campaigns.map(camp => {
                   const sent = camp._count.communications;
-                  const delivered = camp.communications.filter(c => c.status !== 'PENDING' && c.status !== 'FAILED').length;
+                  const delivered = camp.communications.filter(c => !['PENDING', 'SENT', 'FAILED'].includes(c.status)).length;
+                  const opened = camp.communications.filter(c => ['OPENED', 'READ', 'CLICKED'].includes(c.status)).length;
                   const deliveredPct = sent > 0 ? Math.round((delivered / sent) * 100) : 0;
+                  const openedPct = delivered > 0 ? Math.round((opened / delivered) * 100) : 0;
                   
                   return (
                     <tr key={camp.id} className="border-b border-border last:border-0 hover:bg-surface-panel/30 transition-colors">
@@ -69,13 +72,17 @@ export default async function CampaignsPage() {
                       <td className="px-6 py-4">
                         <StatusBadge variant="new">{camp.channel}</StatusBadge>
                       </td>
-                      <td className="px-6 py-4 text-body text-text-secondary">
+                      <td className="px-6 py-4 text-body text-text-secondary" suppressHydrationWarning>
                         {camp.sent_at ? new Date(camp.sent_at).toLocaleDateString() : '—'}
                       </td>
                       <td className="px-6 py-4 text-body text-text-secondary">{sent.toLocaleString()}</td>
                       <td className="px-6 py-4 text-body">
                         <span className="font-medium">{delivered.toLocaleString()}</span>
                         <span className="text-text-muted text-small ml-2">({deliveredPct}%)</span>
+                      </td>
+                      <td className="px-6 py-4 text-body">
+                        <span className="font-medium">{opened.toLocaleString()}</span>
+                        <span className="text-text-muted text-small ml-2">({openedPct}%)</span>
                       </td>
                       <td className="px-6 py-4">
                         <StatusBadge variant={camp.status.toLowerCase() as any}>{camp.status}</StatusBadge>
