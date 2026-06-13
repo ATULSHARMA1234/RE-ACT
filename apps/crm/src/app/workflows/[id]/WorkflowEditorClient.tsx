@@ -400,10 +400,16 @@ function DnDFlow({ initialWorkflow, segments, name, setName, status, setStatus, 
                     value={selectedNode.data.config.condition || ""}
                     onChange={(e) => updateSelectedNodeConfig("condition", e.target.value)}
                   >
-                    <option>Cart Abandoned</option>
-                    <option>Joined Segment</option>
                     <option>Order Placed</option>
-                    <option>Custom Event</option>
+                    <option>Added to Cart</option>
+                    <option>Removed from Cart</option>
+                    <option>Cart Abandoned</option>
+                    <option>Checkout Started</option>
+                    <option>Page Viewed</option>
+                    <option>Added to Wishlist</option>
+                    <option>Order Cancelled</option>
+                    <option>Review Submitted</option>
+                    <option>Coupon Applied</option>
                   </select>
                 </div>
                 <div className="space-y-2">

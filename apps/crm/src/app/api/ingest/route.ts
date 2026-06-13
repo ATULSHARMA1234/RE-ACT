@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { evaluateOrderTriggers } from "@/lib/workflow-engine";
 
 export async function POST(req: Request) {
   try {
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
       if (Array.isArray(data.orders)) {
         for (const orderData of data.orders) {
           if (orderData.amount && orderData.product_name) {
-            await prisma.order.create({
+            const order = await prisma.order.create({
               data: {
                 customer_id: customer.id,
                 amount: parseFloat(orderData.amount),
@@ -53,6 +54,11 @@ export async function POST(req: Request) {
               },
             });
             ordersAdded++;
+            
+            // 3. Trigger workflows asynchronously
+            evaluateOrderTriggers(customer.id, order.id).catch(err => {
+              console.error("[Ingest] Workflow trigger error:", err);
+            });
           }
         }
       }

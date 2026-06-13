@@ -30,8 +30,10 @@ async function getRecentCampaigns() {
 }
 
 export default async function DashboardPage() {
-  const stats = await getDashboardStats();
-  const recentCampaigns = await getRecentCampaigns();
+  const [stats, recentCampaigns] = await Promise.all([
+    getDashboardStats(),
+    getRecentCampaigns(),
+  ]);
 
   return <DashboardClient stats={stats} recentCampaigns={recentCampaigns} />;
 }

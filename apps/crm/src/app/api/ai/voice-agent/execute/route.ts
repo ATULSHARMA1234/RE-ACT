@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { generateWorkflowNodes, parseSegmentIntent, draftMessage, queryDataAI } from "@/lib/ai";
+import { generateWorkflowNodes, parseSegmentIntent, draftMessage } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +10,35 @@ export async function POST(req: Request) {
 
     if (!action) {
       return NextResponse.json({ success: false, error: "Missing action" }, { status: 400 });
+    }
+
+    if (action === "UPDATE_SETTINGS") {
+      const { field, value } = payload;
+
+      const VALID_FIELDS = [
+        "dormant_days", "at_risk_days",
+        "high_value_min_spend", "high_value_min_orders",
+        "mid_tier_min_spend", "mid_tier_min_orders"
+      ];
+
+      if (!field || !VALID_FIELDS.includes(field)) {
+        return NextResponse.json({
+          success: false,
+          error: `Invalid settings field: "${field}". Valid fields: ${VALID_FIELDS.join(", ")}`
+        }, { status: 400 });
+      }
+
+      await prisma.settings.update({
+        where: { id: "singleton" },
+        data: { [field]: Number(value) }
+      });
+
+      const label = field.replace(/_/g, " ");
+      return NextResponse.json({
+        success: true,
+        message: `Updated ${label} to ${value}.`,
+        route: "/settings"
+      });
     }
 
     if (action === "CREATE_WORKFLOW") {
@@ -59,9 +88,15 @@ export async function POST(req: Request) {
       // 1. Draft the message
       const message_template = await draftMessage(goal || "Say hello", target_audience || "Customers", channel || "EMAIL");
       
-      // 2. Try to find a segment, or just use the first one
-      const segment = await prisma.segment.findFirst();
-      if (!segment) throw new Error("No segments found in database to attach campaign to.");
+      // 2. Auto-create a segment for the target audience
+      const filter_json = await parseSegmentIntent(target_audience || "All active customers");
+      const segment = await prisma.segment.create({
+        data: {
+          name: `Segment: ${target_audience || "All Customers"}`,
+          filter_json,
+          is_dynamic: true
+        }
+      });
 
       // Call the fire endpoint to actually deliver the campaign
       const protocol = req.headers.get("x-forwarded-proto") || "http";
@@ -141,43 +176,35 @@ export async function POST(req: Request) {
 
     if (action === "QUERY_DATA") {
       const { question } = payload;
-      
-      // Fetch a fast summary of the database metrics to pass as context
-      const totalCustomers = await prisma.customer.count();
-      const newCustomers = await prisma.customer.count({ where: { lifecycle_stage: "NEW" } });
-      const activeCustomers = await prisma.customer.count({ where: { lifecycle_stage: "ACTIVE" } });
-      const atRiskCustomers = await prisma.customer.count({ where: { lifecycle_stage: "AT_RISK" } });
-      const dormantCustomers = await prisma.customer.count({ where: { lifecycle_stage: "DORMANT" } });
-      
-      const vipCustomers = await prisma.customer.count({ where: { rfm_score: "HIGH_VALUE" } });
-      const lowValueCustomers = await prisma.customer.count({ where: { rfm_score: "LOW_VALUE" } });
-      
-      const activeCampaigns = await prisma.campaign.count({ where: { status: "SENDING" } });
-      const draftedCampaigns = await prisma.campaign.count({ where: { status: "DRAFT" } });
-      
-      const contextStr = `
-Total Customers: ${totalCustomers}
-- NEW: ${newCustomers}
-- ACTIVE: ${activeCustomers}
-- AT RISK: ${atRiskCustomers}
-- DORMANT: ${dormantCustomers}
 
-RFM Tiers:
-- VIP (HIGH VALUE): ${vipCustomers}
-- LOW VALUE: ${lowValueCustomers}
+      // Use the agentic chat API internally for data queries
+      // so the AI can call Prisma to get real, specific answers
+      const protocol = req.headers.get("x-forwarded-proto") || "http";
+      const host = req.headers.get("host");
+      const chatUrl = `${protocol}://${host}/api/ai/chat`;
 
-Campaigns:
-- Active/Sending: ${activeCampaigns}
-- Drafted: ${draftedCampaigns}
-`;
-
-      const answer = await queryDataAI(contextStr, question || "What are our metrics?");
-
-      return NextResponse.json({
-        success: true,
-        message: answer,
-        route: null
+      const chatRes = await fetch(chatUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: question }],
+        }),
       });
+
+      const chatData = await chatRes.json();
+
+      if (chatData.success) {
+        return NextResponse.json({
+          success: true,
+          message: chatData.message,
+          route: null,
+        });
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: chatData.error || "Failed to query data",
+        });
+      }
     }
 
     return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });

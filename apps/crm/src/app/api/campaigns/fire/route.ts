@@ -34,9 +34,13 @@ export async function POST(req: Request) {
 
     const filter: any = segment.filter_json;
     const where: any = {};
-    if (filter.lifecycle_stage && filter.lifecycle_stage.length > 0) where.lifecycle_stage = { in: filter.lifecycle_stage };
-    if (filter.rfm_score && filter.rfm_score.length > 0) where.rfm_score = { in: filter.rfm_score };
-    if (filter.channel_pref && filter.channel_pref.length > 0) where.channel_pref = { in: filter.channel_pref };
+    if (filter.static_ids && filter.static_ids.length > 0) {
+      where.id = { in: filter.static_ids };
+    } else {
+      if (filter.lifecycle_stage && filter.lifecycle_stage.length > 0) where.lifecycle_stage = { in: filter.lifecycle_stage };
+      if (filter.rfm_score && filter.rfm_score.length > 0) where.rfm_score = { in: filter.rfm_score };
+      if (filter.channel_pref && filter.channel_pref.length > 0) where.channel_pref = { in: filter.channel_pref };
+    }
     // Simplified for MVP: rely on just these fields for DB filtering, use memory filtering for order aggregates
     
     const allCustomers = await prisma.customer.findMany({

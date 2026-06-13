@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DollarSign, Zap, Activity } from "lucide-react";
+import { DollarSign, Activity, Sparkles } from "lucide-react";
 
 interface AttributionData {
   channel: string;
@@ -14,7 +14,8 @@ interface AttributionData {
 export default function RevenueAttributionMatrix() {
   const [data, setData] = useState<AttributionData[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
-  const [insight, setInsight] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +25,7 @@ export default function RevenueAttributionMatrix() {
         if (res.success) {
           setData(res.data);
           setTotalRevenue(res.totalRevenue);
-          setInsight(res.insight);
+          setSuggestions(res.suggestions || []);
         }
       })
       .catch(err => console.error(err))
@@ -44,6 +45,14 @@ export default function RevenueAttributionMatrix() {
 
   // Find max revenue for progress bar scaling
   const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
+
+  const formatSuggestion = (text: string) => {
+    // Basic markdown bold replacement for **text**
+    const parts = text.split(/\*\*(.*?)\*\*/g);
+    return parts.map((part, i) => 
+      i % 2 === 1 ? <strong key={i} className="text-text-primary">{part}</strong> : part
+    );
+  };
 
   return (
     <div className="bg-surface-card border border-border rounded-xl p-6 h-full flex flex-col shadow-card">
@@ -92,19 +101,22 @@ export default function RevenueAttributionMatrix() {
         ))}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-border/50">
-        <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-lg p-4 flex gap-3">
-          <div className="shrink-0 mt-0.5">
-            <Zap size={16} className="text-brand-blue" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-brand-blue mb-1 block">AI Insight</span>
-            <p className="text-small text-text-primary leading-relaxed font-medium">
-              {insight}
-            </p>
-          </div>
+      {suggestions.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-border">
+          <h4 className="flex items-center gap-2 text-[12px] font-semibold text-brand-coral uppercase tracking-wider mb-3">
+            <Sparkles size={14} />
+            AI Insights
+          </h4>
+          <ul className="space-y-3">
+            {suggestions.map((suggestion, idx) => (
+              <li key={idx} className="text-small text-text-secondary leading-relaxed flex items-start gap-2">
+                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-brand-coral/50 flex-shrink-0" />
+                <span>{formatSuggestion(suggestion)}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
+      )}
     </div>
   );
 }

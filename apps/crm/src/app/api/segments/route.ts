@@ -4,6 +4,13 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const segments = await prisma.segment.findMany({
+      where: {
+        name: {
+          not: {
+            startsWith: "Follow-up"
+          }
+        }
+      },
       orderBy: { created_at: "desc" }
     });
     return NextResponse.json({ segments });
@@ -15,16 +22,30 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+
+    let filterJson = body.filter;
+
+    // If naturalLanguage is provided, use AI to generate the filter
+    if (body.naturalLanguage && !filterJson) {
+      const { parseSegmentIntent } = await import("@/lib/ai");
+      filterJson = await parseSegmentIntent(body.naturalLanguage);
+    }
+
+    if (!filterJson) {
+      return NextResponse.json({ error: "Either 'filter' or 'naturalLanguage' is required" }, { status: 400 });
+    }
+
     const segment = await prisma.segment.create({
       data: {
-        name: body.name,
-        filter_json: body.filter,
+        name: body.name || "AI Segment",
+        filter_json: filterJson,
         is_dynamic: true
       }
     });
-    return NextResponse.json({ success: true, segment });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create segment" }, { status: 500 });
+    return NextResponse.json({ success: true, id: segment.id, name: segment.name, segment });
+  } catch (error: any) {
+    console.error("Segment creation error:", error);
+    return NextResponse.json({ error: error.message || "Failed to create segment" }, { status: 500 });
   }
 }
 

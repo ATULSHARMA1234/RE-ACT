@@ -14,11 +14,12 @@ export default async function WorkflowsPage() {
     orderBy: { updated_at: "desc" },
   });
 
-  async function createWorkflow() {
+  async function createWorkflow(formData: FormData) {
     "use server";
+    const name = formData.get("name") as string || "New Automation";
     const wf = await prisma.workflow.create({
       data: {
-        name: "New Automation",
+        name,
         nodes_json: { nodes: [], edges: [] },
       },
     });
@@ -59,8 +60,15 @@ export default async function WorkflowsPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <form action={createWorkflow}>
-            <Button className="flex items-center gap-2">
+          <form action={createWorkflow} className="flex gap-2">
+            <input 
+              type="text" 
+              name="name" 
+              placeholder="e.g. Welcome Series"
+              required
+              className="px-3 py-2 border border-border rounded-lg text-small focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+            />
+            <Button type="submit" className="flex items-center gap-2 whitespace-nowrap">
               <Plus size={16} /> Create Workflow
             </Button>
           </form>

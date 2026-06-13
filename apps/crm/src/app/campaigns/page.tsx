@@ -13,9 +13,7 @@ export default async function CampaignsPage() {
     include: {
       segment: { select: { name: true } },
       _count: { select: { communications: true } },
-      communications: {
-        select: { status: true }
-      }
+      communications: { select: { status: true } }
     }
   });
 

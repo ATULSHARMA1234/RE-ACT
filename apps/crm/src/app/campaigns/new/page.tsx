@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Button from "@/components/Button";
-import { Sparkles, Megaphone, CheckCircle2, ChevronRight, ChevronLeft, Send } from "lucide-react";
+import { Sparkles, Megaphone, CheckCircle2, ChevronRight, ChevronLeft, Send, Plus } from "lucide-react";
 
 function NewCampaignPageContent() {
   const router = useRouter();
@@ -19,6 +19,12 @@ function NewCampaignPageContent() {
   const [channels, setChannels] = useState<string[]>(["EMAIL"]);
   const [goal, setGoal] = useState("");
   const [message, setMessage] = useState("");
+
+  // Inline segment creation
+  const [showNewSegment, setShowNewSegment] = useState(false);
+  const [newSegmentName, setNewSegmentName] = useState("");
+  const [newSegmentQuery, setNewSegmentQuery] = useState("");
+  const [creatingSeg, setCreatingSeg] = useState(false);
 
   // Auto-fill from search params
   useEffect(() => {
@@ -39,8 +45,41 @@ function NewCampaignPageContent() {
       });
   }, []);
 
+  const handleCreateSegment = async () => {
+    if (!newSegmentName) return;
+    setCreatingSeg(true);
+    try {
+      const body: any = { name: newSegmentName };
+      if (newSegmentQuery) {
+        body.naturalLanguage = newSegmentQuery;
+      } else {
+        // Default empty filter
+        body.filter = { lifecycle_stage: [], rfm_score: [], channel_pref: [] };
+      }
+      const res = await fetch("/api/segments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success && data.segment) {
+        setSegments(prev => [data.segment, ...prev]);
+        setSegmentId(data.segment.id);
+        setShowNewSegment(false);
+        setNewSegmentName("");
+        setNewSegmentQuery("");
+      } else {
+        alert(data.error || "Failed to create segment");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCreatingSeg(false);
+    }
+  };
+
   const handleDraftAI = async () => {
-    if (!segmentId || !goal || !channel) return;
+    if (!segmentId || !goal || channels.length === 0) return;
     setLoading(true);
     try {
       const selectedSeg = segments.find(s => s.id === segmentId);
@@ -123,13 +162,59 @@ function NewCampaignPageContent() {
               </div>
 
               <div>
-                <label className="block text-small font-semibold text-text-secondary uppercase mb-2">Select Segment</label>
-                {segments.length === 0 ? (
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-small font-semibold text-text-secondary uppercase">Select Segment</label>
+                  <button
+                    onClick={() => setShowNewSegment(!showNewSegment)}
+                    className="flex items-center gap-1.5 text-small font-semibold text-brand-blue hover:text-brand-blue-hover transition-colors"
+                  >
+                    <Plus size={14} />
+                    {showNewSegment ? "Cancel" : "Create New"}
+                  </button>
+                </div>
+
+                {/* Inline Segment Creator */}
+                {showNewSegment && (
+                  <div className="mb-4 p-4 bg-brand-blue/5 border border-brand-blue/20 rounded-lg space-y-3 animate-fade-in">
+                    <div>
+                      <label className="block text-small font-medium text-text-secondary mb-1">Segment Name</label>
+                      <input
+                        type="text"
+                        value={newSegmentName}
+                        onChange={e => setNewSegmentName(e.target.value)}
+                        className="w-full px-3 py-2 border border-border rounded-lg text-body focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+                        placeholder="e.g. High-Value Dormant Customers"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-small font-medium text-text-secondary mb-1">
+                        Describe Audience <span className="text-text-muted">(AI-powered, optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newSegmentQuery}
+                        onChange={e => setNewSegmentQuery(e.target.value)}
+                        className="w-full px-3 py-2 border border-border rounded-lg text-body focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+                        placeholder="e.g. Customers who haven't purchased in 90 days"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleCreateSegment}
+                      loading={creatingSeg}
+                      disabled={!newSegmentName}
+                      icon={<Sparkles size={14} />}
+                    >
+                      Create Segment
+                    </Button>
+                  </div>
+                )}
+
+                {segments.length === 0 && !showNewSegment ? (
                   <div className="p-4 bg-surface-panel rounded-lg text-body text-text-secondary">
-                    No segments found. Go to Segments page to create one.
+                    No segments found. Click &ldquo;Create New&rdquo; above to create one.
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
                     {segments.map(seg => (
                       <label key={seg.id} className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${segmentId === seg.id ? 'border-brand-blue bg-brand-blue/5' : 'border-border hover:bg-surface-panel'}`}>
                         <div className="flex items-center gap-3">
@@ -143,6 +228,9 @@ function NewCampaignPageContent() {
                           />
                           <span className="font-medium">{seg.name}</span>
                         </div>
+                        {segmentId === seg.id && (
+                          <CheckCircle2 size={18} className="text-brand-blue" />
+                        )}
                       </label>
                     ))}
                   </div>

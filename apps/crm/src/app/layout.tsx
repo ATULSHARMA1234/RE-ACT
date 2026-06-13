@@ -16,9 +16,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "REACH — AI-Native Mini CRM",
+  title: "Radiance — AI-Powered Beauty CRM",
   description:
-    "AI-powered CRM for D2C brands. Segment audiences, draft personalized messages, and track campaigns in real time.",
+    "Radiance is an AI-powered CRM built for beauty brands. Segment audiences, automate workflows, and track campaign performance in real time.",
 };
 
 export default function RootLayout({

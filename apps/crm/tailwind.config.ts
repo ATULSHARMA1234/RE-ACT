@@ -26,8 +26,8 @@ const config: Config = {
         },
         surface: {
           canvas: 'transparent',
-          card: 'rgba(255, 255, 255, 0.5)',
-          panel: 'rgba(255, 255, 255, 0.3)',
+          card: 'rgba(255, 255, 255, 0.35)',
+          panel: 'rgba(255, 255, 255, 0.18)',
         },
         border: {
           DEFAULT: 'rgba(0,0,0,0.06)', // Very soft borders

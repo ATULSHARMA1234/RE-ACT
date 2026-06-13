@@ -14,7 +14,7 @@ const io = new SocketServer(server, {
 });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Health check
 app.get('/health', (_req, res) => {
@@ -132,9 +132,114 @@ app.post('/send', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
+const CRM_URL = process.env.CRM_URL || 'http://localhost:3000';
+
+// ─── Simulation State ───────────────────────────────────────────────
+let simulationActive = false;
+let simulationInterval: NodeJS.Timeout | null = null;
+
+// Start/Stop simulation endpoints
+app.post('/simulation/start', (_req, res) => {
+  if (!simulationActive) {
+    simulationActive = true;
+    startSimulation();
+    console.log('[Simulation] ▶️  Started — generating customer events');
+  }
+  res.json({ status: 'started' });
+});
+
+app.post('/simulation/stop', (_req, res) => {
+  simulationActive = false;
+  if (simulationInterval) {
+    clearInterval(simulationInterval);
+    simulationInterval = null;
+  }
+  console.log('[Simulation] ⏸️  Stopped');
+  res.json({ status: 'stopped' });
+});
+
+app.get('/simulation/status', (_req, res) => {
+  res.json({ active: simulationActive });
+});
+
+function startSimulation() {
+  if (simulationInterval) clearInterval(simulationInterval);
+
+  // Generate events every 4-8 seconds
+  const tick = async () => {
+    if (!simulationActive) return;
+
+    try {
+      const res = await fetch(`${CRM_URL}/api/live-feed/auto-simulate`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.count > 0) {
+          const names = data.events.map((e: any) => `${e.event_type}(${e.customer_name})`).join(', ');
+          console.log(`[Simulator] 🎯 ${data.count} events: ${names}`);
+        }
+      }
+    } catch (err: any) {
+      if (err.code !== 'ECONNREFUSED') {
+        console.error('[Simulator] Error:', err.message);
+      }
+    }
+  };
+
+  // Use random interval between 4-8 seconds
+  const scheduleNext = () => {
+    if (!simulationActive) return;
+    const delay = 4000 + Math.floor(Math.random() * 4000);
+    simulationInterval = setTimeout(async () => {
+      await tick();
+      scheduleNext();
+    }, delay);
+  };
+
+  // Fire immediately, then schedule
+  tick();
+  scheduleNext();
+}
+
+// ─── Workflow Engine Poller (always active) ─────────────────────────
+// Runs every 10 seconds:
+//   1. auto-trigger: matches new orders → creates workflow jobs
+//   2. process-jobs: executes due jobs → sends messages
+setInterval(async () => {
+  // Step 1: Auto-trigger
+  try {
+    const triggerRes = await fetch(`${CRM_URL}/api/workflows/auto-trigger`, { method: 'POST' });
+    if (triggerRes.ok) {
+      const data = await triggerRes.json();
+      if (data.triggered > 0) {
+        console.log(`[Auto-Trigger] ⚡ ${data.message}`);
+      }
+    }
+  } catch (err: any) {
+    if (err.code !== 'ECONNREFUSED') {
+      console.error('[Auto-Trigger] Error:', err.message);
+    }
+  }
+
+  // Step 2: Process-jobs
+  try {
+    const res = await fetch(`${CRM_URL}/api/workflows/process-jobs`, { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.processed > 0 || data.failed > 0) {
+        console.log(`[Job Processor] ✉️  Processed ${data.processed} jobs, ${data.failed} failed`);
+      }
+    }
+  } catch (err: any) {
+    if (err.code !== 'ECONNREFUSED') {
+      console.error('[Job Processor] Error:', err.message);
+    }
+  }
+}, 10000); // Every 10 seconds
 
 server.listen(PORT, () => {
   console.log(`🚀 Channel Stub Service running on port ${PORT}`);
+  console.log(`⏱️  Workflow Engine Poller active (10s interval)`);
+  console.log(`📡 Event Simulator available — POST /simulation/start to begin`);
 });
 
 export { app, io, server };

@@ -19,7 +19,7 @@ const MODEL = "llama-3.3-70b-versatile";
  * }
  */
 export async function parseSegmentIntent(naturalLanguageQuery: string) {
-  const systemPrompt = `You are REACH CRM's AI segmentation engine. Given a marketer's natural language description of their target audience, convert it into a structured JSON filter.
+  const systemPrompt = `You are Radiance CRM's AI segmentation engine. Given a marketer's natural language description of their target audience, convert it into a structured JSON filter.
 
 Available filter fields:
 - lifecycle_stage: array of ["NEW", "ACTIVE", "AT_RISK", "DORMANT"]
@@ -66,7 +66,7 @@ export async function draftMessage(
   audienceDescription: string,
   channel: string
 ) {
-  const systemPrompt = `You are REACH CRM's AI message copywriter. Generate a personalized campaign message for a D2C brand.
+  const systemPrompt = `You are Radiance CRM's AI message copywriter. Generate a personalized campaign message for a D2C brand.
 
 Rules:
 1. Use these template tokens: {{first_name}}, {{last_product}}, {{days_since_purchase}}
@@ -102,7 +102,7 @@ Rules:
  * Returns an array of campaign recommendation objects.
  */
 export async function generateProactiveCampaigns(statsSummary: string) {
-  const systemPrompt = `You are REACH CRM's Proactive AI Marketing Advisor (Co-Pilot).
+  const systemPrompt = `You are Radiance CRM's Proactive AI Marketing Advisor (Aura).
 Your task is to analyze the brand's current customer stats and recommend exactly 3 highly actionable, targeted marketing campaign ideas.
 
 For each idea, specify:
@@ -135,7 +135,7 @@ Return ONLY a JSON object containing a "recommendations" array with exactly 3 it
  * Generates structured React Flow nodes and edges from a natural language prompt.
  */
 export async function generateWorkflowNodes(prompt: string) {
-  const systemPrompt = `You are REACH CRM's Workflow AI Architect. Your job is to convert a natural language description of an automation campaign into a structured React Flow JSON object.
+  const systemPrompt = `You are Radiance CRM's Workflow AI Architect. Your job is to convert a natural language description of an automation campaign into a structured React Flow JSON object.
 
 Valid Custom Node Types:
 1. 'triggerNode' - Event Source (e.g., Cart Abandoned, Joined Segment). Config: { condition: string, value?: string }
@@ -174,31 +174,42 @@ Rules:
  * Takes a natural language transcript and maps it to a strict Action Schema.
  */
 export async function parseVoiceCommand(transcript: string) {
-  const systemPrompt = `You are the REACH CRM Agentic Copilot. Your job is to parse a user's voice command and map it to a specific actionable intent.
+  const systemPrompt = `You are the Radiance CRM Agentic Assistant (Aura). Your job is to parse a user's voice command and map it to a specific actionable intent.
 
 Available Actions:
-1. CREATE_WORKFLOW
-   - user wants to build/create an automated sequence/workflow.
-   - extract: 'name' (string), 'prompt' (string: detailed description of what it should do).
-2. CREATE_SEGMENT
-   - user wants to create an audience segment.
+1. UPDATE_SETTINGS
+   - user wants to change/update/set/modify any CRM setting (e.g. dormant days, at-risk days, min spend, min orders).
+   - extract: 'field' (string: exact field name from Settings model, e.g. "dormant_days", "at_risk_days", "high_value_min_spend", "high_value_min_orders", "mid_tier_min_spend", "mid_tier_min_orders"), 'value' (number: the new value).
+   - IMPORTANT: If the user says "change dormant days to 60", map to UPDATE_SETTINGS with field="dormant_days", value=60.
+2. CREATE_WORKFLOW
+   - user wants to build an AUTOMATED SEQUENCE triggered by an EVENT with DELAYS and CONDITIONS.
+   - Keywords that indicate a workflow: "after", "when", "trigger", "delay", "wait", "hours later", "days later", "automated", "sequence", "if they", "follow up", "workflow", "automation".
+   - extract: 'name' (string), 'prompt' (string: include the full description with trigger event, delays, channels, and message intent).
+   - Example: "send a thank you email 2 hours after someone places an order" → CREATE_WORKFLOW.
+   - Example: "when a customer becomes dormant, wait 1 day then send a WhatsApp" → CREATE_WORKFLOW.
+3. CREATE_SEGMENT
+   - user wants to create an audience segment/group.
    - extract: 'name' (string), 'description' (string: who is in this segment).
-3. CREATE_CAMPAIGN
-   - user wants to draft/create a marketing campaign.
-   - extract: 'name' (string), 'channel' (string: e.g. "EMAIL", "WHATSAPP", "SMS", or multiple comma-separated like "EMAIL, SMS"), 'target_audience' (string: who should receive it), 'goal' (string: what the message should say).
-4. PAUSE_CAMPAIGN
+4. CREATE_CAMPAIGN
+   - user wants to send a ONE-TIME blast or broadcast to a group of customers RIGHT NOW.
+   - Keywords that indicate a campaign: "send to all", "blast", "broadcast", "campaign", "announce", "promote", "flash sale".
+   - extract: 'name' (string), 'channel' (string: "EMAIL", "WHATSAPP", "SMS"), 'target_audience' (string), 'goal' (string).
+   - Example: "send a 20% discount to all VIP customers via SMS" → CREATE_CAMPAIGN.
+5. PAUSE_CAMPAIGN
    - user wants to pause or stop a campaign.
-   - extract: 'campaign_name' (string: the name or a fuzzy description of the campaign to pause).
-5. QUERY_DATA
+   - extract: 'campaign_name' (string).
+6. QUERY_DATA
    - user asks a question about their metrics or data (e.g. "how many VIP customers do we have?").
    - extract: 'question' (string: the exact question asked).
-6. NAVIGATE
+7. NAVIGATE
    - user just wants to view a page (e.g. "go to dashboard", "show customers").
    - extract: 'page' (string: "dashboard", "workflows", "campaigns", "customers", "settings").
 
-Rules:
+CRITICAL DISAMBIGUATION RULES:
+- If the user mentions a TRIGGER EVENT (e.g. "after placing an order", "when they sign up") or a TIME DELAY (e.g. "2 hours later", "wait 1 day"), it is ALWAYS a CREATE_WORKFLOW, NEVER a CREATE_CAMPAIGN.
+- A CAMPAIGN is a one-time send. A WORKFLOW is a recurring automated sequence.
+- When in doubt between campaign and workflow, look for time-based language ("after", "when", "delay", "wait") — if present, choose CREATE_WORKFLOW.
 - Return ONLY a JSON object containing { "action": "ACTION_NAME", "payload": { ... } }.
-- If the user says "build a workflow that sends a message to inactive members", map to CREATE_WORKFLOW with prompt="sends a message to inactive members".
 - Do not add markdown or explanation.`;
 
   const completion = await groq.chat.completions.create({
@@ -223,7 +234,7 @@ Rules:
  * Takes a context string (database summary) and a user's question, and returns a natural language answer.
  */
 export async function queryDataAI(contextStr: string, question: string) {
-  const systemPrompt = `You are the REACH CRM Data Analyst. You are given a summary of the current database state as context.
+  const systemPrompt = `You are the Radiance CRM Data Analyst (Aura). You are given a summary of the current database state as context.
 Answer the user's question accurately using ONLY the provided context. 
 Keep your answer short, conversational, and direct (1-2 sentences), because it will be spoken out loud via Text-to-Speech to the user.`;
 
@@ -248,7 +259,7 @@ Keep your answer short, conversational, and direct (1-2 sentences), because it w
  * Takes aggregated campaign revenue metrics and generates a 2-sentence actionable insight.
  */
 export async function generateAttributionInsight(statsSummary: string) {
-  const systemPrompt = `You are the REACH CRM Chief Marketing Officer (AI).
+  const systemPrompt = `You are the Radiance CRM Chief Marketing Officer (Aura).
 Analyze the provided Revenue Attribution metrics.
 Write a 2-sentence actionable insight highlighting the best performing channel by ROI/Revenue and recommending a budget shift or strategy adjustment.
 Keep it punchy, professional, and data-driven. Do not use markdown formatting.`;
@@ -267,4 +278,31 @@ Keep it punchy, professional, and data-driven. Do not use markdown formatting.`;
   if (!content) throw new Error("No response from Groq");
 
   return content.trim();
+}
+
+/**
+ * AI Campaign Analyst
+ * Analyzes campaign performance metrics and suggests further actions to bring in more customers.
+ */
+export async function generateCampaignInsights(metricsSummary: string) {
+  const systemPrompt = `You are the Radiance CRM AI Analyst (Aura).
+Analyze the following campaign performance metrics. Provide exactly 2 concise, actionable recommendations for follow-up campaigns or actions that would bring in more customers or improve conversions.
+Return ONLY a JSON object with an array "recommendations" containing strings. No markdown, no explanation.
+Example: { "recommendations": ["Send a follow-up SMS to users who opened but didn't click.", "Create a 'Win Back' segment for those who failed delivery."] }`;
+
+  const completion = await groq.chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Metrics:\n${metricsSummary}` },
+    ],
+    temperature: 0.5,
+    max_tokens: 300,
+    response_format: { type: "json_object" },
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) throw new Error("No response from Groq");
+
+  return JSON.parse(content);
 }

@@ -2,9 +2,11 @@ import AppShell from "@/components/AppShell";
 import Button from "@/components/Button";
 import StatusBadge from "@/components/StatusBadge";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileBarChart } from "lucide-react";
 import prisma from "@/lib/prisma";
+import { generateCampaignInsights } from "@/lib/ai";
 import CampaignLiveTracker from "./CampaignLiveTracker";
+import CampaignReport from "./CampaignReport";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,7 @@ export default async function CampaignDrilldownPage({ params }: { params: { id: 
       segment: true,
       communications: {
         include: {
-          customer: { select: { name: true, email: true } }
+          customer: { select: { name: true, email: true, channel_pref: true } }
         },
         orderBy: { updated_at: "desc" }
       }
@@ -29,6 +31,64 @@ export default async function CampaignDrilldownPage({ params }: { params: { id: 
       </AppShell>
     );
   }
+
+  // Compute report data server-side
+  const comms = campaign.communications;
+  const total = comms.length;
+  const sent = comms.filter(c => c.status !== "PENDING").length;
+  const delivered = comms.filter(c => ["DELIVERED", "OPENED", "READ", "CLICKED"].includes(c.status)).length;
+  const failed = comms.filter(c => c.status === "FAILED").length;
+  const opened = comms.filter(c => ["OPENED", "READ", "CLICKED"].includes(c.status)).length;
+  const read = comms.filter(c => ["READ", "CLICKED"].includes(c.status)).length;
+  const clicked = comms.filter(c => c.status === "CLICKED").length;
+  const pending = comms.filter(c => c.status === "PENDING").length;
+
+  // Status distribution
+  const statusDist: Record<string, number> = {};
+  comms.forEach(c => { statusDist[c.status] = (statusDist[c.status] || 0) + 1; });
+
+  // Channel distribution
+  const channelDist: Record<string, number> = {};
+  comms.forEach(c => {
+    const ch = c.customer?.channel_pref || "UNKNOWN";
+    channelDist[ch] = (channelDist[ch] || 0) + 1;
+  });
+
+  // Generate AI Insights
+  let aiInsights: string[] = [];
+  try {
+    if (total > 0) {
+      const summary = `Total Recipients: ${total}, Sent: ${sent}, Delivered: ${delivered}, Opened: ${opened}, Read: ${read}, Clicked: ${clicked}, Failed: ${failed}. Channel: ${campaign.channel}`;
+      const res = await generateCampaignInsights(summary);
+      if (res.recommendations) {
+        aiInsights = res.recommendations;
+      }
+    }
+  } catch (e) {
+    console.error("AI Insights failed:", e);
+  }
+
+  const reportData = {
+    campaignId: campaign.id,
+    campaignName: campaign.name,
+    segmentName: campaign.segment.name,
+    channel: campaign.channel,
+    status: campaign.status,
+    sentAt: campaign.sent_at?.toISOString() || null,
+    createdAt: campaign.created_at.toISOString(),
+    messageTemplate: campaign.message_template || "",
+    metrics: { total, sent, delivered, failed, opened, read, clicked, pending },
+    rates: {
+      deliveryRate: sent > 0 ? Math.round((delivered / sent) * 100) : 0,
+      openRate: delivered > 0 ? Math.round((opened / delivered) * 100) : 0,
+      readRate: opened > 0 ? Math.round((read / opened) * 100) : 0,
+      clickRate: opened > 0 ? Math.round((clicked / opened) * 100) : 0,
+      failureRate: sent > 0 ? Math.round((failed / sent) * 100) : 0,
+    },
+    statusDistribution: statusDist,
+    channelDistribution: channelDist,
+    aiInsights,
+  };
 
   return (
     <AppShell>
@@ -50,7 +110,12 @@ export default async function CampaignDrilldownPage({ params }: { params: { id: 
         </div>
       </div>
 
-      <CampaignLiveTracker initialCampaign={campaign} />
+      {/* Campaign Report */}
+      <CampaignReport data={reportData} />
+
+      <div className="mt-8">
+        <CampaignLiveTracker initialCampaign={campaign} />
+      </div>
 
     </AppShell>
   );

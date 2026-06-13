@@ -9,6 +9,7 @@ const pageTitles: Record<string, string> = {
   "/campaigns": "Campaigns",
   "/campaigns/new": "Create Campaign",
   "/analytics": "Analytics",
+  "/aura": "Aura AI",
 };
 
 export default function TopBar() {
@@ -21,11 +22,11 @@ export default function TopBar() {
     for (const [path, title] of Object.entries(pageTitles)) {
       if (pathname.startsWith(path) && path !== "/") return title;
     }
-    return "REACH";
+    return "Radiance";
   };
 
   return (
-    <header className="h-topbar bg-white/40 backdrop-blur-2xl border-b border-white/60 flex items-center justify-between px-8 sticky top-0 z-40">
+    <header className="h-topbar bg-white/25 backdrop-blur-2xl border-b border-white/30 flex items-center justify-between px-8 sticky top-0 z-40">
       <div>
         <h1 className="text-h1 font-display text-text-primary">{getTitle()}</h1>
       </div>
