@@ -61,74 +61,43 @@ export default function CommandPalette() {
     { id: 5, name: "Settings", action: () => router.push("/settings") },
   ];
 
-  // Handle Speech Recognition (Continuous Background & Foreground)
-  useEffect(() => {
-    let recognition: any = null;
-    let isIntentionallyStopped = false;
+  // Handle Speech Recognition — only active when palette is open (Cmd+K)
+  const recognitionRef = useRef<any>(null);
 
-    if (typeof window !== "undefined" && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+  useEffect(() => {
+    if (typeof window === "undefined" || !('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      return;
+    }
+
+    if (isOpen) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
+      const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
+      recognitionRef.current = recognition;
 
       recognition.onresult = (event: any) => {
         const currentTranscript = Array.from(event.results)
           .map((result: any) => result[0])
           .map((result: any) => result.transcript)
           .join("");
-
-        if (!isOpenRef.current) {
-          // BACKGROUND MODE: Looking for "Hey Aura"
-          if (currentTranscript.toLowerCase().includes("hey aura") || currentTranscript.toLowerCase().includes("hey ora") || currentTranscript.toLowerCase().includes("hey laura")) {
-            setIsOpen(true);
-            setIsListening(true);
-            setProcessing(false);
-            
-            // Extract anything said after the wake word
-            const lowerTrans = currentTranscript.toLowerCase();
-            const splitWord = lowerTrans.includes("hey aura") ? "hey aura" : (lowerTrans.includes("hey ora") ? "hey ora" : "hey laura");
-            const match = lowerTrans.split(splitWord);
-            const remainder = match[1]?.trim() || "";
-            
-            // We set search manually, then stop the recognition to clear its transcript buffer
-            if (remainder) setSearch(remainder);
-            try { recognition.stop(); } catch(e) {}
-          }
-        } else {
-          // FOREGROUND MODE: User is talking to the open palette
-          setSearch(currentTranscript);
-        }
+        setSearch(currentTranscript);
       };
 
       recognition.onend = () => {
-        if (!isIntentionallyStopped) {
-          // Auto-restart with a short delay to prevent rapid cycling
+        // Auto-restart only if palette is still open
+        if (isOpenRef.current) {
           setTimeout(() => {
-            if (!isIntentionallyStopped) {
-              try {
-                recognition.start();
-              } catch (e) {
-                // Silently ignore — already running or can't restart
-              }
-            }
+            try { recognition.start(); } catch (e) {}
           }, 300);
         }
       };
-      
+
       recognition.onerror = (event: any) => {
-        // Suppress 'no-speech' — this is expected in continuous background listening
-        if (event.error === 'no-speech' || event.error === 'aborted') {
-          return;
-        }
+        if (event.error === 'no-speech' || event.error === 'aborted') return;
         console.error("Speech recognition error", event.error);
-        if (event.error === 'not-allowed') {
-          isIntentionallyStopped = true;
-        }
-        if (isOpenRef.current) {
-          setIsListening(false);
-        }
+        setIsListening(false);
       };
 
       try {
@@ -136,17 +105,21 @@ export default function CommandPalette() {
       } catch (e) {
         console.error("Could not start speech recognition", e);
       }
+    } else {
+      // Stop recognition when palette closes
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+        recognitionRef.current = null;
+      }
     }
 
     return () => {
-      isIntentionallyStopped = true;
-      if (recognition) {
-        try {
-          recognition.stop();
-        } catch(e) {}
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+        recognitionRef.current = null;
       }
     };
-  }, []);
+  }, [isOpen]);
 
   // Handle Enter Key for execution
   useEffect(() => {
@@ -213,7 +186,8 @@ export default function CommandPalette() {
       if (data.success) {
         speak(data.message || "Action completed successfully.");
         if (data.route) {
-          setTimeout(() => router.push(data.route), 1500);
+          // Show route as a message instead of auto-redirecting
+          speak(`${data.message || 'Done!'} You can navigate to the page from here.`);
         }
       } else {
         speak(data.error || "Failed to execute the action.");
@@ -310,7 +284,7 @@ export default function CommandPalette() {
         </div>
 
         <p className="text-xs text-white/50 mt-8 font-medium tracking-widest uppercase">
-          Press ENTER to send • Press ESC to cancel
+        Press ENTER to send • ⌘K to toggle • ESC to close
         </p>
       </div>
     </div>
