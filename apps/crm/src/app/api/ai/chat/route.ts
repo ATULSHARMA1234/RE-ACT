@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const MODEL = "llama-3.3-70b-versatile";
+const MODEL = "llama-3.1-70b-versatile";
 
 const SYSTEM_PROMPT = `You are Aura, an intelligent AI Marketing Assistant embedded in Radiance, a beauty brand CRM platform.
 Your job is to help marketers plan, build, and launch campaigns through natural conversation.
@@ -228,14 +228,34 @@ Total customers: ${customerCount} | Dormant: ${dormantCount} | At-risk: ${atRisk
 
     // Agentic loop: AI can call tools, get results, and respond
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const completion = await groq.chat.completions.create({
-        model: MODEL,
-        messages: conversationMessages,
-        tools: TOOLS as any,
-        tool_choice: "auto",
-        temperature: 0.5,
-        max_tokens: 800,
-      });
+      let completion;
+      try {
+        completion = await groq.chat.completions.create({
+          model: MODEL,
+          messages: conversationMessages,
+          tools: TOOLS as any,
+          tool_choice: "auto",
+          temperature: 0.5,
+          max_tokens: 800,
+        });
+      } catch (groqError: any) {
+        // If Groq fails with tool_use_failed, retry without tools
+        if (groqError?.status === 400 || groqError?.error?.code === 'tool_use_failed') {
+          console.warn("Tool use failed, retrying without tools...");
+          const fallback = await groq.chat.completions.create({
+            model: MODEL,
+            messages: conversationMessages,
+            temperature: 0.5,
+            max_tokens: 800,
+          });
+          return NextResponse.json({
+            success: true,
+            message: sanitizeResponse(fallback.choices[0]?.message?.content || "I had trouble processing that. Could you rephrase?"),
+            route,
+          });
+        }
+        throw groqError;
+      }
 
       const choice = completion.choices[0];
       const assistantMessage = choice?.message;
