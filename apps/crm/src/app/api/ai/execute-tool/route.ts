@@ -56,6 +56,35 @@ export async function POST(req: Request) {
           data: result
         });
       } catch (prismaError: any) {
+        // Auto-fix: If campaign.create fails due to missing segment, create the segment first
+        if (model === 'campaign' && operation === 'create' && 
+            prismaError.message?.includes('Foreign key constraint') &&
+            prismaError.message?.includes('segment_id')) {
+          try {
+            const campaignData = (parsedArgs as any).data || parsedArgs;
+            // Create a default segment for this campaign
+            const segment = await prisma.segment.create({
+              data: {
+                name: campaignData.name ? `${campaignData.name} Segment` : 'AI-Created Segment',
+                filter_json: { type: 'ALL' },
+                is_dynamic: true,
+              }
+            });
+            // Retry campaign creation with the real segment_id
+            const retryArgs = { ...parsedArgs, data: { ...campaignData, segment_id: segment.id } } as any;
+            const result = await prismaModel[operation](retryArgs);
+            return NextResponse.json({ 
+              success: true, 
+              message: `Created segment "${segment.name}" and campaign successfully.`,
+              data: result
+            });
+          } catch (retryError: any) {
+            return NextResponse.json({ 
+              success: false, 
+              error: `Retry failed: ${retryError.message?.slice(0, 300)}`
+            }, { status: 400 });
+          }
+        }
         return NextResponse.json({ 
           success: false, 
           error: `Prisma error: ${prismaError.message?.slice(0, 300)}`

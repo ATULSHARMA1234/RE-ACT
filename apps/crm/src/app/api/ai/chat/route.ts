@@ -61,7 +61,13 @@ CRITICAL PRISMA RULES:
 - groupBy() uses "by" (array), NOT "_groupBy".
 - To find top customers by spend: use order.groupBy with by:["customer_id"], _sum:{amount:true}, orderBy:{_sum:{amount:"desc"}}, take:N. Then look up each customer_id with customer.findFirst.
 - If you need to create or update a record linked to a user (like creating an order for an email address), FIRST do a "findFirst" (READ) to look up the user by email to get their ID. DO NOT call the "create" tool in the same turn. Wait for the tool result in the next turn, and THEN execute the "create" (WRITE) operation with the real ID. DO NOT try to guess the ID or use placeholders like "{id}".
-- NEVER invent Prisma arguments. Only use: where, select, include, take, skip, orderBy, by, _count, _sum, _avg, _min, _max, data, cursor.`;
+- NEVER invent Prisma arguments. Only use: where, select, include, take, skip, orderBy, by, _count, _sum, _avg, _min, _max, data, cursor.
+
+CAMPAIGN CREATION WORKFLOW (CRITICAL — MUST FOLLOW):
+When the user asks to create a campaign, you MUST do it in TWO steps:
+Step 1 (READ): Create the segment FIRST using segment.create with the appropriate filter_json matching the audience criteria (e.g., {lifecycle_stage: ["DORMANT"]} for dormant users). This is a WRITE so it will be shown for confirmation.
+Step 2 (after segment is created): Then create the campaign using campaign.create with the REAL segment_id from Step 1.
+NEVER create a campaign with a made-up segment_id. ALWAYS create the segment first.`;
 
 const TOOLS = [
   {
