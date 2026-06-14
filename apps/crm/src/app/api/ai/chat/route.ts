@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const gemini = new GoogleGenAI({ apiKey: (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY)! });
 const GROQ_MODEL = "llama-3.3-70b-versatile";
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.0-flash-lite";
 
 // Parse XML-style tool calls from Groq's failed_generation
 function parseXmlToolCall(failedGen: string): { name: string; arguments: string } | null {

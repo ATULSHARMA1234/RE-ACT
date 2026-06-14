@@ -6,7 +6,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const gemini = new GoogleGenAI({ apiKey: (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY)! });
 
 const GROQ_MODEL = "llama-3.3-70b-versatile";
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.0-flash-lite";
 const GROQ_TIMEOUT_MS = 8000; // Fail fast to Gemini if Groq is slow
 
 /**
