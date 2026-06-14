@@ -140,11 +140,13 @@ export default function AuraPage() {
           },
         ]);
         if (data.route) {
-          setTimeout(() => router.push(data.route), 1500);
-        } else {
-          router.refresh();
-          window.dispatchEvent(new Event("crm-data-updated"));
+          setMessages((prev) => [
+            ...prev.slice(0, -1),
+            { ...prev[prev.length - 1], route: data.route },
+          ]);
         }
+        router.refresh();
+        window.dispatchEvent(new Event("crm-data-updated"));
       } else {
         setMessages((prev) => [
           ...prev,
@@ -209,9 +211,9 @@ export default function AuraPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-[calc(100vh-var(--topbar-height)-48px)]">
+      <div className="flex flex-col h-[calc(100vh-64px)] md:h-[calc(100vh-var(--topbar-height)-48px)]">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 shrink-0">
+        <div className="flex items-center justify-between mb-4 md:mb-6 shrink-0 px-1">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-brand-coral flex items-center justify-center shadow-lg">
               <Sparkles size={22} className="text-white" />
@@ -233,7 +235,7 @@ export default function AuraPage() {
         {/* Chat Area */}
         <div className="flex-1 bg-surface-card border border-border rounded-2xl shadow-card overflow-hidden flex flex-col">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-6">
             {/* Starter Prompts Grid */}
             {showStarters && (
               <div className="mb-8">
@@ -241,7 +243,7 @@ export default function AuraPage() {
                   <Zap size={14} className="text-[#8B5CF6]" />
                   <span className="text-small font-semibold text-text-secondary uppercase tracking-wider">Quick Actions</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                   {STARTER_PROMPTS.map((prompt, i) => (
                     <button
                       key={i}
@@ -272,7 +274,7 @@ export default function AuraPage() {
                   )}
 
                   <div
-                    className={`max-w-[70%] rounded-2xl px-5 py-4 ${
+                    className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 md:px-5 md:py-4 ${
                       msg.role === "user"
                         ? "bg-[#8B5CF6] text-white rounded-br-md"
                         : "bg-surface-canvas border border-border/50 text-text-primary rounded-bl-md"
@@ -353,7 +355,7 @@ export default function AuraPage() {
           </div>
 
           {/* Input Bar */}
-          <div className="px-6 py-4 border-t border-border bg-surface-card shrink-0">
+          <div className="px-3 py-3 md:px-6 md:py-4 border-t border-border bg-surface-card shrink-0">
             <div className="flex items-end gap-3">
               <div className="flex-1 relative">
                 <textarea
