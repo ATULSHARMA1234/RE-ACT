@@ -11,5 +11,8 @@
     "dev": "pnpm run --parallel dev:crm dev:stub",
     "build": "pnpm --filter @radiance/crm build",
     "lint": "pnpm --filter @radiance/crm lint"
+  },
+  "dependencies": {
+    "next": "14.2.35"
   }
 }
