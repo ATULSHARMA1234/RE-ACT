@@ -14,7 +14,7 @@ export interface WorkflowNode {
 
 export default function WorkflowNodeBuilder() {
   const [nodes, setNodes] = useState<WorkflowNode[]>([
-    { id: "1", type: "trigger", config: { condition: "Cart Abandoned", value: "Value > $50" } },
+    { id: "1", type: "trigger", config: { condition: "Cart Abandoned", value: "Value > ₹50" } },
   ]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>("1");
 
@@ -213,7 +213,7 @@ export default function WorkflowNodeBuilder() {
                 <label className="text-small font-semibold text-text-secondary uppercase tracking-wider">Condition (Optional)</label>
                 <input 
                   type="text"
-                  placeholder="e.g. Value > $50"
+                  placeholder="e.g. Value > ₹50"
                   className="w-full p-2 border border-border rounded-md text-body focus:ring-2 focus:ring-brand-blue outline-none"
                   value={selectedNode.config.value || ""}
                   onChange={(e) => updateNodeConfig("value", e.target.value)}

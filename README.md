@@ -1,6 +1,7 @@
-# REACH CRM — AI-Native Marketing & Engagement Platform
 
-> An intelligent, AI-first Customer Relationship Management platform built for D2C brands. REACH doesn't just store customer data — it **thinks**, **segments**, **drafts**, and **delivers** campaigns autonomously using an agentic AI copilot.
+# RADIANCE CRM — AI-Native Marketing & Engagement Platform
+
+> An intelligent, AI-first Customer Relationship Management platform built for D2C brands. RADIANCE doesn't just store customer data — it **thinks**, **segments**, **drafts**, and **delivers** campaigns autonomously using an agentic AI copilot.
 
 <p align="center">
   <strong>Built with</strong><br/>
@@ -56,7 +57,7 @@ AI is woven into **every layer** of the product:
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│                    REACH CRM (Next.js)                 │
+│                    RADIANCE CRM (Next.js)                 │
 │                                                        │
 │  ┌──────────┐  ┌───────────┐  ┌─────────────────────┐ │
 │  │ Dashboard │  │ Segments  │  │ Campaign Creator    │ │

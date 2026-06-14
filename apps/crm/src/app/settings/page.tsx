@@ -194,7 +194,7 @@ export default function SettingsPage() {
                     <div>
                       <div className="flex items-center gap-2 mb-4">
                         <span className="w-3 h-3 rounded-full bg-brand-blue"></span>
-                        <h4 className="font-semibold text-body">HIGH_VALUE Tier</h4>
+                        <h4 className="font-display font-semibold text-body text-text-primary">HIGH_VALUE Tier</h4>
                       </div>
                       <div className="grid grid-cols-2 gap-6 pl-5">
                         <div>
@@ -224,7 +224,7 @@ export default function SettingsPage() {
                     <div>
                       <div className="flex items-center gap-2 mb-4">
                         <span className="w-3 h-3 rounded-full bg-brand-coral"></span>
-                        <h4 className="font-semibold text-body">MID_TIER Tier</h4>
+                        <h4 className="font-display font-semibold text-body text-text-primary">MID_TIER Tier</h4>
                       </div>
                       <div className="grid grid-cols-2 gap-6 pl-5">
                         <div>
@@ -316,28 +316,28 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   <div className="p-6 bg-surface-card flex flex-col gap-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border border-border rounded-lg bg-surface-canvas/50 gap-4">
-                <div className="flex-1">
-                  <h4 className="font-semibold text-body">Generate Demo Data</h4>
-                  <p className="text-small text-text-secondary mt-1 max-w-md">Wipes the database and instantly generates realistic mock customers complete with historical order patterns.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="number"
-                    min="1"
-                    max="1000000"
-                    value={seedSize}
-                    onChange={(e) => setSeedSize(e.target.value)}
-                    placeholder="e.g. 5000"
-                    className="w-32 px-3 py-2 border border-border rounded-lg bg-surface-card focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-small"
-                  />
-                  <Button onClick={() => handleDataAction('seed')} loading={managingData}>Seed Database</Button>
-                </div>
-              </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 border border-border rounded-xl bg-surface-card shadow-sm gap-4 transition-all hover:border-brand-blue/30">
+                      <div className="flex-1">
+                        <h4 className="font-display font-semibold text-body text-text-primary">Generate Demo Data</h4>
+                        <p className="text-small text-text-secondary mt-1 max-w-md">Wipes the database and instantly generates realistic mock customers complete with historical order patterns.</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="number"
+                          min="1"
+                          max="1000000"
+                          value={seedSize}
+                          onChange={(e) => setSeedSize(e.target.value)}
+                          placeholder="e.g. 5000"
+                          className="w-32 px-4 py-2 border border-border rounded-lg bg-surface-canvas focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-small text-text-primary font-sans transition-shadow"
+                        />
+                        <Button onClick={() => handleDataAction('seed')} loading={managingData}>Seed Database</Button>
+                      </div>
+                    </div>
                     
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border border-status-error/30 rounded-lg bg-status-error/5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 border border-status-error/30 rounded-xl bg-status-error/5 shadow-sm transition-all hover:border-status-error/50">
                       <div className="mb-4 sm:mb-0">
-                        <h4 className="font-semibold text-status-error text-body">Wipe Database</h4>
+                        <h4 className="font-display font-semibold text-status-error text-body">Wipe Database</h4>
                         <p className="text-small text-status-error/80 mt-1 max-w-md">Permanently deletes all customers, orders, segments, and campaigns. Settings will be preserved.</p>
                       </div>
                       <Button 

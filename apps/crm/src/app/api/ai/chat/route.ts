@@ -109,8 +109,9 @@ function sanitizeResponse(text: string): string {
   // Remove <function=...>...</function> XML blocks
   cleaned = cleaned.replace(/<function[^>]*>[\s\S]*?<\/function>/gi, "").trim();
 
-  // Remove ```json ... ``` code blocks
-  cleaned = cleaned.replace(/```(?:json|prisma|javascript|typescript|sql)?\s*[\s\S]*?```/gi, "").trim();
+  // Instead of destroying code blocks, unwrap them so data is preserved
+  cleaned = cleaned.replace(/```(?:json|prisma|javascript|typescript|sql|html)?/gi, "");
+  cleaned = cleaned.replace(/```/g, "");
 
   // Remove lines that look like raw Prisma operations: {"model":"customer",...}
   cleaned = cleaned.replace(/\{[\s\S]*?"model"\s*:\s*"[^"]+"\s*,\s*"operation"\s*:\s*"[^"]+"[\s\S]*?\}/g, "").trim();
@@ -154,9 +155,17 @@ async function executeTool(toolName: string, args: any): Promise<{ success: bool
     if (prismaArgsStr) {
       if (typeof prismaArgsStr === "string") {
         try {
-          parsedArgs = JSON.parse(prismaArgsStr);
-        } catch {
-          return { success: false, result: "Invalid JSON in args" };
+          // Strip markdown formatting if AI added it
+          let cleanArgs = prismaArgsStr.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+          parsedArgs = JSON.parse(cleanArgs);
+        } catch (e) {
+          try {
+            // Fallback evaluation for malformed JSON
+            let cleanArgs = prismaArgsStr.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+            parsedArgs = new Function("return " + cleanArgs)();
+          } catch (fallbackError) {
+            return { success: false, result: "Invalid JSON in args. Provide a pure JSON string without markdown." };
+          }
         }
       } else if (typeof prismaArgsStr === "object") {
         parsedArgs = prismaArgsStr;

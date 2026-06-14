@@ -1,3 +1,7 @@
+
+
+
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -57,16 +61,16 @@ interface WorkflowActivity {
 /* ─── Event Display Helpers ──────────────────────────────────────── */
 
 const EVENT_META: Record<string, { icon: any; label: string; color: string; bg: string; border: string }> = {
-  ORDER_PLACED:      { icon: ShoppingBag,       label: "Order Placed",       color: "text-brand-green",   bg: "bg-brand-green/5",    border: "border-brand-green/20" },
-  CART_ABANDONED:    { icon: ShoppingCart,       label: "Cart Abandoned",     color: "text-brand-amber",   bg: "bg-brand-amber/5",    border: "border-brand-amber/20" },
-  ADDED_TO_CART:     { icon: ShoppingCart,       label: "Added to Cart",      color: "text-brand-blue",    bg: "bg-brand-blue/5",     border: "border-brand-blue/20" },
-  REMOVED_FROM_CART: { icon: Trash2,             label: "Removed from Cart",  color: "text-status-danger", bg: "bg-status-danger/5",  border: "border-status-danger/20" },
-  CHECKOUT_STARTED:  { icon: CreditCard,         label: "Checkout Started",   color: "text-[#8B5CF6]",    bg: "bg-[#8B5CF6]/5",      border: "border-[#8B5CF6]/20" },
-  PAGE_VIEWED:       { icon: Eye,                label: "Page Viewed",        color: "text-text-secondary",bg: "bg-surface-panel/30", border: "border-border" },
-  WISHLIST_ADDED:    { icon: Heart,              label: "Added to Wishlist",  color: "text-brand-coral",   bg: "bg-brand-coral/5",    border: "border-brand-coral/20" },
-  ORDER_CANCELLED:   { icon: XOctagon,           label: "Order Cancelled",    color: "text-status-danger", bg: "bg-status-danger/5",  border: "border-status-danger/20" },
-  REVIEW_SUBMITTED:  { icon: Star,               label: "Review Submitted",   color: "text-brand-amber",   bg: "bg-brand-amber/5",    border: "border-brand-amber/20" },
-  COUPON_APPLIED:    { icon: Tag,                label: "Coupon Applied",     color: "text-brand-green",   bg: "bg-brand-green/5",    border: "border-brand-green/20" },
+  ORDER_PLACED: { icon: ShoppingBag, label: "Order Placed", color: "text-brand-green", bg: "bg-brand-green/5", border: "border-brand-green/20" },
+  CART_ABANDONED: { icon: ShoppingCart, label: "Cart Abandoned", color: "text-brand-amber", bg: "bg-brand-amber/5", border: "border-brand-amber/20" },
+  ADDED_TO_CART: { icon: ShoppingCart, label: "Added to Cart", color: "text-brand-blue", bg: "bg-brand-blue/5", border: "border-brand-blue/20" },
+  REMOVED_FROM_CART: { icon: Trash2, label: "Removed from Cart", color: "text-status-danger", bg: "bg-status-danger/5", border: "border-status-danger/20" },
+  CHECKOUT_STARTED: { icon: CreditCard, label: "Checkout Started", color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/5", border: "border-[#8B5CF6]/20" },
+  PAGE_VIEWED: { icon: Eye, label: "Page Viewed", color: "text-text-secondary", bg: "bg-surface-panel/30", border: "border-border" },
+  WISHLIST_ADDED: { icon: Heart, label: "Added to Wishlist", color: "text-brand-coral", bg: "bg-brand-coral/5", border: "border-brand-coral/20" },
+  ORDER_CANCELLED: { icon: XOctagon, label: "Order Cancelled", color: "text-status-danger", bg: "bg-status-danger/5", border: "border-status-danger/20" },
+  REVIEW_SUBMITTED: { icon: Star, label: "Review Submitted", color: "text-brand-amber", bg: "bg-brand-amber/5", border: "border-brand-amber/20" },
+  COUPON_APPLIED: { icon: Tag, label: "Coupon Applied", color: "text-brand-green", bg: "bg-brand-green/5", border: "border-brand-green/20" },
 };
 
 function formatTimestamp(ts: string): string {
@@ -309,9 +313,9 @@ export default function LiveFeedPage() {
   // Start/Stop simulation on channel-stub
   useEffect(() => {
     if (isRunning) {
-      fetch(`${SOCKET_URL}/simulation/start`, { method: "POST" }).catch(() => {});
+      fetch(`${SOCKET_URL}/simulation/start`, { method: "POST" }).catch(() => { });
     } else {
-      fetch(`${SOCKET_URL}/simulation/stop`, { method: "POST" }).catch(() => {});
+      fetch(`${SOCKET_URL}/simulation/stop`, { method: "POST" }).catch(() => { });
     }
   }, [isRunning, SOCKET_URL]);
 
@@ -371,11 +375,10 @@ export default function LiveFeedPage() {
             )}
             <button
               onClick={() => setIsRunning(!isRunning)}
-              className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-semibold text-body transition-all duration-300 shadow-sm ${
-                isRunning
+              className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-semibold text-body transition-all duration-300 shadow-sm ${isRunning
                   ? "bg-status-danger text-white hover:bg-status-danger/90"
                   : "bg-brand-green text-white hover:bg-brand-green/90"
-              }`}
+                }`}
             >
               {isRunning ? (<><Pause size={16} /> Stop</>) : (<><Play size={16} /> Start Live</>)}
             </button>
@@ -399,9 +402,8 @@ export default function LiveFeedPage() {
                 </p>
               </div>
               {selectedWorkflow && (
-                <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                  selectedWorkflow.status === "ACTIVE" ? "bg-[#E6F4EA] text-[#1E8E3E]" : "bg-surface-panel text-text-secondary"
-                }`}>{selectedWorkflow.status}</span>
+                <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${selectedWorkflow.status === "ACTIVE" ? "bg-[#E6F4EA] text-[#1E8E3E]" : "bg-surface-panel text-text-secondary"
+                  }`}>{selectedWorkflow.status}</span>
               )}
               <ChevronDown size={16} className={`text-text-muted transition-transform ${showSelector ? "rotate-180" : ""}`} />
             </button>

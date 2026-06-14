@@ -1,3 +1,5 @@
+
+
 import AppShell from "@/components/AppShell";
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
@@ -101,7 +103,7 @@ export default async function CustomerProfilePage({
           <div className="text-right bg-surface-panel p-4 rounded-lg border border-border">
             <p className="text-small text-text-muted uppercase tracking-wide">Lifetime Value</p>
             <p className="text-h2 font-display font-bold text-brand-green">
-              ${total_spend.toLocaleString()}
+              ₹{total_spend.toLocaleString()}
             </p>
           </div>
         </div>
@@ -158,7 +160,7 @@ export default async function CustomerProfilePage({
                           {event.date.toLocaleDateString()} at {event.date.toLocaleTimeString()}
                         </p>
                         {event.type === "ORDER" && event.amount && (
-                          <p className="font-semibold text-brand-green">+${event.amount.toLocaleString()}</p>
+                          <p className="font-semibold text-brand-green">+₹{event.amount.toLocaleString()}</p>
                         )}
                         {event.status && event.type !== "ORDER" && (
                           <StatusBadge variant={event.status.toLowerCase() as any}>

@@ -1,6 +1,6 @@
-# REACH CRM - Project Task List
+# RADIANCE CRM - Project Task List
 
-This task list is generated based on the REACH PRD v1.1, Design Language v1.1, and Tech Stack v1.1 documents. Each task is sequential, atomic, and structured to prevent overlapping dependencies.
+This task list is generated based on the RADIANCE PRD v1.1, Design Language v1.1, and Tech Stack v1.1 documents. Each task is sequential, atomic, and structured to prevent overlapping dependencies.
 
 ## Phase 1: Environment & Scaffolding
 - [ ] **Task 1.1**: Initialize monorepo structure using pnpm workspaces (create directories for `apps/crm` and `apps/channel-stub`).
@@ -15,8 +15,8 @@ This task list is generated based on the REACH PRD v1.1, Design Language v1.1, a
 - [x] **Task 2.3**: Write a database seed script (`seed.ts`) to generate realistic mock `Customer` and `Order` data, including pre-calculated RFM (Recency, Frequency, Monetary) scores.
 - [x] **Task 2.4**: Create a CSV ingestion API endpoint (`POST /api/customers/upload`) that parses a CSV and upserts records into the database.
 
-## Phase 3: Design System & Core UI (REACH Design Language)
-- [x] **Task 3.1**: Extend `tailwind.config.js` with REACH semantic color tokens (`ink-navy`, `electric-blue`, `signal-green`, `coral-accent`, etc.) and the 4px-based spacing scale.
+## Phase 3: Design System & Core UI (RADIANCE Design Language)
+- [x] **Task 3.1**: Extend `tailwind.config.js` with RADIANCE semantic color tokens (`ink-navy`, `electric-blue`, `signal-green`, `coral-accent`, etc.) and the 4px-based spacing scale.
 - [x] **Task 3.2**: Implement global typography (Inter for body, DM Sans for display) using `next/font/google`.
 - [x] **Task 3.3**: Build the global Layout shell: fixed left sidebar (dark) with navigation icons, top bar, and a fluid light-grey content canvas.
 - [x] **Task 3.4**: Build reusable atomic UI components: Buttons (Primary, AI/Accent, Secondary, Danger) and Status Badges (Delivered, Pending, AI Draft, etc.).

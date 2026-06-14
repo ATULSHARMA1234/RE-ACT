@@ -1,5 +1,5 @@
 {
-  "name": "@reach/crm",
+  "name": "@radiance/crm",
   "version": "0.1.0",
   "private": true,
   "prisma": {
@@ -23,7 +23,8 @@
     "react-dom": "^18",
     "recharts": "^3.8.1",
     "socket.io-client": "^4.8.3",
-    "sonner": "^2.0.7"
+    "sonner": "^2.0.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20",

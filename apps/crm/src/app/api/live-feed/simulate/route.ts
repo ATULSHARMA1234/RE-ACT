@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       },
     });
 
-    console.log(`[Live Feed] 🛒 Order placed: ${customer.name} → ${product.name} ($${product.amount})`);
+    console.log(`[Live Feed] 🛒 Order placed: ${customer.name} → ${product.name} (₹${product.amount})`);
 
     return NextResponse.json({
       success: true,
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         product: product.name,
         amount: product.amount,
       },
-      message: `Order placed: ${customer.name} bought ${product.name} ($${product.amount}). Workflow will trigger automatically.`,
+      message: `Order placed: ${customer.name} bought ${product.name} (₹${product.amount}). Workflow will trigger automatically.`,
     });
   } catch (error: any) {
     console.error("[Simulate] Error:", error);

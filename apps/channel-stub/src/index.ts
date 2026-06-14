@@ -18,7 +18,7 @@ app.use(express.json({ limit: '50mb' }));
 
 // Health check
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'reach-channel-stub' });
+  res.json({ status: 'ok', service: 'radiance-channel-stub' });
 });
 
 const CRM_RECEIPT_URL = process.env.CRM_RECEIPT_URL || 'http://localhost:3000/api/receipts';
@@ -200,45 +200,8 @@ function startSimulation() {
   scheduleNext();
 }
 
-// ─── Workflow Engine Poller (always active) ─────────────────────────
-// Runs every 10 seconds:
-//   1. auto-trigger: matches new orders → creates workflow jobs
-//   2. process-jobs: executes due jobs → sends messages
-setInterval(async () => {
-  // Step 1: Auto-trigger
-  try {
-    const triggerRes = await fetch(`${CRM_URL}/api/workflows/auto-trigger`, { method: 'POST' });
-    if (triggerRes.ok) {
-      const data = await triggerRes.json();
-      if (data.triggered > 0) {
-        console.log(`[Auto-Trigger] ⚡ ${data.message}`);
-      }
-    }
-  } catch (err: any) {
-    if (err.code !== 'ECONNREFUSED') {
-      console.error('[Auto-Trigger] Error:', err.message);
-    }
-  }
-
-  // Step 2: Process-jobs
-  try {
-    const res = await fetch(`${CRM_URL}/api/workflows/process-jobs`, { method: 'POST' });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.processed > 0 || data.failed > 0) {
-        console.log(`[Job Processor] ✉️  Processed ${data.processed} jobs, ${data.failed} failed`);
-      }
-    }
-  } catch (err: any) {
-    if (err.code !== 'ECONNREFUSED') {
-      console.error('[Job Processor] Error:', err.message);
-    }
-  }
-}, 10000); // Every 10 seconds
-
 server.listen(PORT, () => {
   console.log(`🚀 Channel Stub Service running on port ${PORT}`);
-  console.log(`⏱️  Workflow Engine Poller active (10s interval)`);
   console.log(`📡 Event Simulator available — POST /simulation/start to begin`);
 });
 

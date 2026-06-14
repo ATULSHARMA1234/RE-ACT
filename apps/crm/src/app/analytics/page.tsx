@@ -238,7 +238,7 @@ export default async function AnalyticsPage() {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-h2 font-display font-bold text-text-primary">${totalRevenue.toLocaleString()}</p>
+                <p className="text-h2 font-display font-bold text-text-primary">₹{totalRevenue.toLocaleString()}</p>
                 <p className="text-[10px] text-text-muted uppercase">Total Revenue</p>
               </div>
               <div className="text-right">
@@ -269,11 +269,11 @@ export default async function AnalyticsPage() {
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <p className="text-h2 font-display font-bold text-brand-green">${attributedRevenue.toLocaleString()}</p>
+                  <p className="text-h2 font-display font-bold text-brand-green">₹{attributedRevenue.toLocaleString()}</p>
                   <p className="text-[10px] text-text-muted uppercase">Attributed</p>
                 </div>
                 <div>
-                  <p className="text-h2 font-display font-bold text-text-secondary">${organicRevenue.toLocaleString()}</p>
+                  <p className="text-h2 font-display font-bold text-text-secondary">₹{organicRevenue.toLocaleString()}</p>
                   <p className="text-[10px] text-text-muted uppercase">Organic</p>
                 </div>
                 <div>
@@ -315,7 +315,7 @@ export default async function AnalyticsPage() {
 
                       <div className="grid grid-cols-4 gap-2">
                         <div>
-                          <p className="text-h2 font-display font-bold text-brand-green">${camp.revenue.toLocaleString()}</p>
+                          <p className="text-h2 font-display font-bold text-brand-green">₹{camp.revenue.toLocaleString()}</p>
                           <p className="text-[10px] text-text-muted uppercase">Revenue</p>
                         </div>
                         <div>
@@ -323,7 +323,7 @@ export default async function AnalyticsPage() {
                           <p className="text-[10px] text-text-muted uppercase">Orders</p>
                         </div>
                         <div>
-                          <p className="text-h2 font-display font-bold text-text-primary">${camp.orders > 0 ? Math.round(camp.revenue / camp.orders).toLocaleString() : 0}</p>
+                          <p className="text-h2 font-display font-bold text-text-primary">₹{camp.orders > 0 ? Math.round(camp.revenue / camp.orders).toLocaleString() : 0}</p>
                           <p className="text-[10px] text-text-muted uppercase">AOV</p>
                         </div>
                         <div>

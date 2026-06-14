@@ -20,7 +20,6 @@ import CampaignHeatmap from "@/components/dashboard/CampaignHeatmap";
 import RevenueAttributionMatrix from "@/components/dashboard/RevenueAttributionMatrix";
 import SentimentAnalysisFeed from "@/components/dashboard/SentimentAnalysisFeed";
 import ChannelPerformanceWidget from "@/components/dashboard/ChannelPerformanceWidget";
-import Customer360Drawer from "@/components/customers/Customer360Drawer";
 
 interface DashboardClientProps {
   stats: {
@@ -33,22 +32,8 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ stats, recentCampaigns }: DashboardClientProps) {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>();
-
-  const openCustomer360 = (id?: string) => {
-    setSelectedCustomerId(id);
-    setIsDrawerOpen(true);
-  };
-
   return (
     <AppShell>
-      {/* Customer 360 Drawer */}
-      <Customer360Drawer 
-        isOpen={isDrawerOpen} 
-        onClose={() => setIsDrawerOpen(false)} 
-        customerId={selectedCustomerId}
-      />
 
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -60,9 +45,6 @@ export default function DashboardClient({ stats, recentCampaigns }: DashboardCli
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => openCustomer360("mock")}>
-            <Users size={16} className="mr-2 inline" /> Test Customer 360
-          </Button>
           <Link href="/campaigns/new">
             <Button className="flex items-center gap-2">
               <Plus size={16} /> New Campaign

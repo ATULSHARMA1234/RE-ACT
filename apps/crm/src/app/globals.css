@@ -63,3 +63,46 @@ body {
     animation: shimmer 1.5s linear infinite;
   }
 }
+
+/* Landing Page specific styles */
+.ambient-shadow {
+  box-shadow: 0 4px 20px 0px rgba(47, 48, 56, 0.04);
+}
+
+.glass-panel {
+  background: rgba(251, 248, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+#page-wrapper {
+  transition: opacity 1s ease-in-out;
+}
+
+.landing-hero-image-container {
+  transition: transform 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center center;
+}
+
+.landing-hero-content-wrapper {
+  transition: opacity 1.2s ease-in-out, transform 1.2s ease-in-out;
+}
+
+.zoomed .landing-hero-image-container {
+  transform: scale(4);
+}
+
+.zoomed .landing-hero-content-wrapper {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+}
+
+.zoomed .landing-nav-transition {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.landing-nav-transition {
+  transition: opacity 0.8s ease-in-out;
+}

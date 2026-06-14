@@ -389,7 +389,7 @@ export default function SegmentsPage() {
             </div>
 
             <p className="text-small text-brand-coral/80 mb-4 leading-relaxed">
-              Describe the audience you want to reach, and I'll configure the filters for you instantly.
+              Describe the audience you want to radiance, and I'll configure the filters for you instantly.
             </p>
 
             <textarea

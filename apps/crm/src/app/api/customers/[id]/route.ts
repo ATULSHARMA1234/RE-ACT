@@ -57,7 +57,7 @@ export async function GET(
       activity.push({
         type: "ORDER",
         date: order.created_at,
-        description: `Purchased ${order.product_name} ($${order.amount.toFixed(2)})`,
+        description: `Purchased ${order.product_name} (₹${order.amount.toFixed(2)})`,
         color: "brand-green"
       });
     }

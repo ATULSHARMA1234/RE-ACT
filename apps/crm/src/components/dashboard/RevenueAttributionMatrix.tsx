@@ -67,7 +67,7 @@ export default function RevenueAttributionMatrix() {
         <div className="text-right">
           <p className="text-[11px] text-text-secondary uppercase tracking-wider font-semibold">Total Driven</p>
           <p className="text-h2 font-display font-bold text-brand-green">
-            ${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ₹{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function RevenueAttributionMatrix() {
             <div className="flex justify-between items-end">
               <span className="font-semibold text-body capitalize">{item.channel.toLowerCase()}</span>
               <div className="text-right">
-                <span className="font-bold text-body">${item.revenue.toLocaleString()}</span>
+                <span className="font-bold text-body">₹{item.revenue.toLocaleString()}</span>
                 <span className="text-[11px] text-text-secondary ml-2">({item.orders} orders)</span>
               </div>
             </div>

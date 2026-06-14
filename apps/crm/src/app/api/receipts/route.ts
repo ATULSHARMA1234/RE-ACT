@@ -34,10 +34,35 @@ export async function POST(req: Request) {
       }
     });
 
-    // 3. Update the parent Communication record's status and timestamp
-    const updateData: any = {
-      status: event_type // PENDING -> DELIVERED -> OPENED -> CLICKED (or FAILED)
+    // 3. Fetch current communication to check state
+    const communication = await prisma.communication.findUnique({
+      where: { id: communication_id },
+      select: { status: true }
+    });
+
+    if (!communication) {
+      return NextResponse.json({ error: "Communication not found" }, { status: 404 });
+    }
+
+    const EVENT_WEIGHTS: Record<string, number> = {
+      PENDING: 0,
+      SENT: 1,
+      DELIVERED: 2,
+      OPENED: 3,
+      READ: 4,
+      CLICKED: 5,
+      FAILED: 99
     };
+
+    const currentWeight = EVENT_WEIGHTS[communication.status] || 0;
+    const incomingWeight = EVENT_WEIGHTS[event_type] || 0;
+
+    const updateData: any = {};
+    
+    // Only upgrade the status if the incoming event is further along the lifecycle
+    if (incomingWeight > currentWeight) {
+      updateData.status = event_type;
+    }
 
     const eventDate = timestamp ? new Date(timestamp) : new Date();
 
@@ -48,10 +73,13 @@ export async function POST(req: Request) {
     else if (event_type === 'CLICKED') updateData.clicked_at = eventDate;
     else if (event_type === 'FAILED') updateData.failed_at = eventDate;
 
-    await prisma.communication.update({
-      where: { id: communication_id },
-      data: updateData
-    });
+    // Only hit the DB if there is actually data to update
+    if (Object.keys(updateData).length > 0) {
+      await prisma.communication.update({
+        where: { id: communication_id },
+        data: updateData
+      });
+    }
 
     return NextResponse.json({ success: true });
 

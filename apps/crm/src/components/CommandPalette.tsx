@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Plus, Play, Users, Megaphone, Settings, Command, Mic, MicOff, Sparkles } from "lucide-react";
 
@@ -36,9 +36,14 @@ export default function CommandPalette() {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  // Reset state when closed
+  const isOpenRef = useRef(isOpen);
+  
+  // Reset state when closed, enable listening state when open
   useEffect(() => {
-    if (!isOpen) {
+    isOpenRef.current = isOpen;
+    if (isOpen) {
+      setIsListening(true);
+    } else {
       setSearch("");
       setIsListening(false);
       setProcessing(false);
@@ -56,85 +61,84 @@ export default function CommandPalette() {
     { id: 5, name: "Settings", action: () => router.push("/settings") },
   ];
 
-  // Handle Speech Recognition
+  // Handle Speech Recognition (Continuous Background & Foreground)
   useEffect(() => {
     let recognition: any = null;
-    let timeoutId: NodeJS.Timeout;
+    let isIntentionallyStopped = false;
 
-    if (isOpen) {
-      if (typeof window !== "undefined" && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
+    if (typeof window !== "undefined" && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
 
-        recognition.onstart = () => {
-          setIsListening(true);
-          setProcessing(false);
-        };
-        
-        recognition.onresult = (event: any) => {
-          let finalTranscript = '';
-          let interimTranscript = '';
-          
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript;
-            } else {
-              interimTranscript += event.results[i][0].transcript;
-            }
-          }
-          
-          // We just take whatever the current result gives us
-          const currentTranscript = Array.from(event.results)
-            .map((result: any) => result[0])
-            .map((result: any) => result.transcript)
-            .join("");
+      recognition.onresult = (event: any) => {
+        const currentTranscript = Array.from(event.results)
+          .map((result: any) => result[0])
+          .map((result: any) => result.transcript)
+          .join("");
+
+        if (!isOpenRef.current) {
+          // BACKGROUND MODE: Looking for "Hey Aura"
+          if (currentTranscript.toLowerCase().includes("hey aura") || currentTranscript.toLowerCase().includes("hey ora") || currentTranscript.toLowerCase().includes("hey laura")) {
+            setIsOpen(true);
+            setIsListening(true);
+            setProcessing(false);
             
-          setSearch(currentTranscript);
-        };
-
-        recognition.onend = () => {
-          setIsListening(false);
-          // If the user hasn't hit enter yet, keep it listening if it's still open
-          // Actually, continuous=true will keep it open until we manually call stop() or it errors.
-        };
-        
-        recognition.onerror = (event: any) => {
-          console.error("Speech recognition error", event.error);
-          setIsListening(false);
-          if (event.error !== 'no-speech') {
-            setIsOpen(false);
+            // Extract anything said after the wake word
+            const lowerTrans = currentTranscript.toLowerCase();
+            const splitWord = lowerTrans.includes("hey aura") ? "hey aura" : (lowerTrans.includes("hey ora") ? "hey ora" : "hey laura");
+            const match = lowerTrans.split(splitWord);
+            const remainder = match[1]?.trim() || "";
+            
+            // We set search manually, then stop the recognition to clear its transcript buffer
+            if (remainder) setSearch(remainder);
+            try { recognition.stop(); } catch(e) {}
           }
-        };
-
-        try {
-          recognition.start();
-        } catch (e) {
-          console.error("Could not start speech recognition", e);
+        } else {
+          // FOREGROUND MODE: User is talking to the open palette
+          setSearch(currentTranscript);
         }
-      }
-    } else {
-      setSearch("");
-      setIsListening(false);
-      setProcessing(false);
-      if (recognition) {
-        try {
-          recognition.stop();
-        } catch(e) {}
+      };
+
+      recognition.onend = () => {
+        if (!isIntentionallyStopped) {
+          // Auto-restart to keep wake word active
+          try {
+            recognition.start();
+          } catch (e) {
+            console.error("Could not restart background speech recognition", e);
+          }
+        }
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        if (event.error === 'not-allowed') {
+          isIntentionallyStopped = true;
+        }
+        if (isOpenRef.current && event.error !== 'no-speech') {
+          setIsListening(false);
+        }
+      };
+
+      try {
+        recognition.start();
+      } catch (e) {
+        console.error("Could not start speech recognition", e);
       }
     }
 
     return () => {
+      isIntentionallyStopped = true;
       if (recognition) {
         try {
           recognition.stop();
         } catch(e) {}
       }
-      clearTimeout(timeoutId);
     };
-  }, [isOpen]);
+  }, []);
 
   // Handle Enter Key for execution
   useEffect(() => {
