@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const gemini = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
+const gemini = new GoogleGenAI({ apiKey: (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY)! });
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 const GEMINI_MODEL = "gemini-2.0-flash";
 
@@ -353,7 +353,7 @@ export async function POST(req: NextRequest) {
     try {
       const groqResult = await Promise.race([
         runGroqChat(systemWithContext, messages),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Groq timeout')), 8000))
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Groq timeout')), 15000))
       ]);
       return groqResult;
     } catch (groqError: any) {

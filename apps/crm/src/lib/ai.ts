@@ -3,11 +3,11 @@ import { GoogleGenAI } from "@google/genai";
 
 // Dual providers
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const gemini = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
+const gemini = new GoogleGenAI({ apiKey: (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY)! });
 
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 const GEMINI_MODEL = "gemini-2.0-flash";
-const GROQ_TIMEOUT_MS = 5000; // Fail fast to Gemini if Groq is slow
+const GROQ_TIMEOUT_MS = 8000; // Fail fast to Gemini if Groq is slow
 
 /**
  * Safely parse JSON from AI responses that may contain markdown fences or extra text.
