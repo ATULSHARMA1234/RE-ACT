@@ -24,11 +24,8 @@ pnpm-debug.log*
 
 # local env files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-apps/crm/.env
+.env.*
+!.env.example
 
 # vercel
 .vercel
@@ -39,7 +36,11 @@ apps/crm/.env
 # prisma generated files
 /apps/crm/src/generated/prisma
 
-# proprietary assignment guidelines
+# proprietary docs
 *.pdf
 *.docx
 *.doc
+
+# lock files (using pnpm)
+package-lock.json
+yarn.lock
