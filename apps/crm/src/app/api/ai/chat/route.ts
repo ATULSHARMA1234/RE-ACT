@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const MODEL = "llama-3.1-8b-instant";
+const MODEL = "llama-3.3-70b-versatile";
 
 const SYSTEM_PROMPT = `You are Aura, an intelligent AI Marketing Assistant embedded in Radiance, a beauty brand CRM platform.
 Your job is to help marketers plan, build, and launch campaigns through natural conversation.
@@ -48,10 +48,10 @@ Database Schema (Prisma Models & Fields):
 Prisma operation examples (use EXACTLY these patterns):
 - Count: { model: "customer", operation: "count", args: "{\\"where\\":{\\"lifecycle_stage\\":\\"DORMANT\\"}}" }
 - Find top 5 VIPs: { model: "customer", operation: "findMany", args: "{\\"where\\":{\\"rfm_score\\":\\"HIGH_VALUE\\"},\\"take\\":5,\\"select\\":{\\"name\\":true,\\"email\\":true}}" }
-- Top customer by spend: { model: "customer", operation: "findMany", args: "{\\"include\\":{\\"orders\\":{\\"select\\":{\\"amount\\":true}}},\\"take\\":10}" } then calculate total spend from the orders array in the result.
+- TOP N HIGHEST-SPENDING CUSTOMERS (PREFERRED): { model: "customer", operation: "findMany", args: "{\\"include\\":{\\"orders\\":{\\"select\\":{\\"amount\\":true}}},\\"take\\":50}" } — then compute totalSpend = sum(orders.amount) for each customer, sort descending, pick top N. Present as "1. Name — $X total".
 - Total revenue: { model: "order", operation: "aggregate", args: "{\\"_sum\\":{\\"amount\\":true}}" }
 - GroupBy lifecycle: { model: "customer", operation: "groupBy", args: "{\\"by\\":[\\"lifecycle_stage\\"],\\"_count\\":true}" }
-- GroupBy orders by customer (top spenders): { model: "order", operation: "groupBy", args: "{\\"by\\":[\\"customer_id\\"],\\"_sum\\":{\\"amount\\":true},\\"orderBy\\":{\\"_sum\\":{\\"amount\\":\\"desc\\"}},\\"take\\":5}" } then use the customer_id to look up the customer name.
+- GroupBy orders by customer (alternative for top spenders): { model: "order", operation: "groupBy", args: "{\\"by\\":[\\"customer_id\\"],\\"_sum\\":{\\"amount\\":true},\\"orderBy\\":{\\"_sum\\":{\\"amount\\":\\"desc\\"}},\\"take\\":5}" } then use customer_id to look up the name with a second findFirst call.
 - Find customer by ID: { model: "customer", operation: "findFirst", args: "{\\"where\\":{\\"id\\":\\"<id>\\"}}" }
 - Update Settings: { model: "settings", operation: "update", args: "{\\"where\\":{\\"id\\":\\"singleton\\"},\\"data\\":{\\"dormant_days\\":60}}" }
 - Create Segment: { model: "segment", operation: "create", args: "{\\"data\\":{\\"name\\":\\"VIP Win-back\\",\\"filter_json\\":{\\"rfm_score\\":[\\"HIGH_VALUE\\"],\\"lifecycle_stage\\":[\\"DORMANT\\"]},\\"is_dynamic\\":true}}" }
@@ -217,7 +217,7 @@ Total customers: ${customerCount} | Dormant: ${dormantCount} | At-risk: ${atRisk
 
     let route: string | undefined;
     let pendingAction: any = null;
-    const MAX_TOOL_ROUNDS = 3;
+    const MAX_TOOL_ROUNDS = 5;
     const WRITE_OPS = ["create", "update", "updateMany", "delete", "deleteMany", "upsert"];
 
     // Agentic loop: AI can call tools, get results, and respond

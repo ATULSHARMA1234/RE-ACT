@@ -104,21 +104,29 @@ export default function CommandPalette() {
 
       recognition.onend = () => {
         if (!isIntentionallyStopped) {
-          // Auto-restart to keep wake word active
-          try {
-            recognition.start();
-          } catch (e) {
-            console.error("Could not restart background speech recognition", e);
-          }
+          // Auto-restart with a short delay to prevent rapid cycling
+          setTimeout(() => {
+            if (!isIntentionallyStopped) {
+              try {
+                recognition.start();
+              } catch (e) {
+                // Silently ignore — already running or can't restart
+              }
+            }
+          }, 300);
         }
       };
       
       recognition.onerror = (event: any) => {
+        // Suppress 'no-speech' — this is expected in continuous background listening
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+          return;
+        }
         console.error("Speech recognition error", event.error);
         if (event.error === 'not-allowed') {
           isIntentionallyStopped = true;
         }
-        if (isOpenRef.current && event.error !== 'no-speech') {
+        if (isOpenRef.current) {
           setIsListening(false);
         }
       };
