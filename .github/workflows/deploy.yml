@@ -78,11 +78,4 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Install Railway CLI
-        run: npm i -g @railway/cli
 
-      - name: Deploy Channel Stub to Railway
-        working-directory: ./apps/channel-stub
-        run: railway up --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
