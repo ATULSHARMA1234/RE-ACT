@@ -94,10 +94,6 @@ export default function AuraPage() {
           },
         ]);
 
-        if (data.route) {
-          setTimeout(() => router.push(data.route), 500);
-        }
-
         if (!data.action) {
           router.refresh();
           window.dispatchEvent(new Event("crm-data-updated"));
