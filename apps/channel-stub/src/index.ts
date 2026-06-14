@@ -3,7 +3,7 @@ import http from 'http';
 import { Server as SocketServer } from 'socket.io';
 import cors from 'cors';
 
-const app = express();
+const app: express.Application = express();
 const server = http.createServer(app);
 
 const io = new SocketServer(server, {
@@ -172,7 +172,7 @@ function startSimulation() {
     try {
       const res = await fetch(`${CRM_URL}/api/live-feed/auto-simulate`, { method: 'POST' });
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as any;
         if (data.count > 0) {
           const names = data.events.map((e: any) => `${e.event_type}(${e.customer_name})`).join(', ');
           console.log(`[Simulator] 🎯 ${data.count} events: ${names}`);
