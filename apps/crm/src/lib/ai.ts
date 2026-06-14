@@ -7,6 +7,7 @@ const gemini = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
 
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 const GEMINI_MODEL = "gemini-2.0-flash";
+const GROQ_TIMEOUT_MS = 5000; // Fail fast to Gemini if Groq is slow
 
 /**
  * Safely parse JSON from AI responses that may contain markdown fences or extra text.
@@ -38,8 +39,10 @@ function safeParseJSON(text: string): any {
  * Dual-provider AI call: tries Groq first, falls back to Gemini on any error.
  */
 async function callAI(systemPrompt: string, userMessage: string, config?: { temperature?: number; maxTokens?: number; json?: boolean }): Promise<string> {
-  // --- Attempt 1: Groq ---
+  // --- Attempt 1: Groq (with timeout) ---
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
     const completion = await groq.chat.completions.create({
       model: GROQ_MODEL,
       messages: [
@@ -49,12 +52,13 @@ async function callAI(systemPrompt: string, userMessage: string, config?: { temp
       temperature: config?.temperature ?? 0.5,
       max_tokens: config?.maxTokens ?? 800,
       ...(config?.json ? { response_format: { type: "json_object" } } : {}),
-    });
+    }, { signal: controller.signal } as any);
+    clearTimeout(timeout);
     const content = completion.choices[0]?.message?.content;
     if (!content) throw new Error("Empty Groq response");
     return content;
   } catch (groqError: any) {
-    console.warn(`Groq failed (${groqError?.status || groqError?.message}), falling back to Gemini...`);
+    console.warn(`Groq failed (${groqError?.name === 'AbortError' ? 'timeout' : groqError?.status || groqError?.message}), falling back to Gemini...`);
   }
 
   // --- Attempt 2: Gemini fallback ---
@@ -220,7 +224,7 @@ IMPORTANT RULES:
   const content = await callAI(
     systemPrompt,
     `Voice transcript: "${transcript}"`,
-    { temperature: 0.1, maxTokens: 500, json: true }
+    { temperature: 0.1, maxTokens: 200, json: true }
   );
 
   return safeParseJSON(content);

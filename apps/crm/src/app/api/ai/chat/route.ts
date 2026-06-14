@@ -348,11 +348,15 @@ export async function POST(req: NextRequest) {
     const contextNote = `\n\n[LIVE CRM SNAPSHOT]: Total: ${customerCount} | Dormant: ${dormantCount} | At-risk: ${atRiskCount} | High-value: ${highValueCount} | Campaigns: ${campaignCount}`;
     const systemWithContext = SYSTEM_PROMPT + contextNote;
 
-    // Try Groq first, fall back to Gemini
+    // Try Groq first (with timeout), fall back to Gemini
     try {
-      return await runGroqChat(systemWithContext, messages);
+      const groqResult = await Promise.race([
+        runGroqChat(systemWithContext, messages),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Groq timeout')), 8000))
+      ]);
+      return groqResult;
     } catch (groqError: any) {
-      console.warn(`Groq chat failed (${groqError?.status || groqError?.message}), falling back to Gemini...`);
+      console.warn(`Groq chat failed (${groqError?.message || groqError?.status}), falling back to Gemini...`);
       try {
         return await runGeminiChat(systemWithContext, messages);
       } catch (geminiError: any) {
