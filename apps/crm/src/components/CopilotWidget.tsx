@@ -90,11 +90,11 @@ export default function CopilotWidget() {
         ]);
 
         if (data.route) {
-          setTimeout(() => router.push(data.route), 500);
-        }
-
-        // Refresh for read-only queries that might have displayed data
-        if (!data.action) {
+          // Show nav link in chat but don't auto-redirect
+          router.refresh();
+          window.dispatchEvent(new Event("crm-data-updated"));
+        } else if (!data.action) {
+          // Refresh for read-only queries that might have displayed data
           router.refresh();
           window.dispatchEvent(new Event("crm-data-updated"));
         }
@@ -140,14 +140,14 @@ export default function CopilotWidget() {
           },
         ]);
         if (data.route) {
-          setTimeout(() => {
-            setIsOpen(false);
-            router.push(data.route);
-          }, 1500);
-        } else {
-          router.refresh();
-          window.dispatchEvent(new Event("crm-data-updated"));
+          // Store route in the message so user can navigate manually
+          setMessages((prev) => [
+            ...prev.slice(0, -1),
+            { ...prev[prev.length - 1], route: data.route },
+          ]);
         }
+        router.refresh();
+        window.dispatchEvent(new Event("crm-data-updated"));
       } else {
         setMessages((prev) => [
           ...prev,
