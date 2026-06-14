@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma";
 import { generateCampaignInsights } from "@/lib/ai";
 import CampaignLiveTracker from "./CampaignLiveTracker";
 import CampaignReport from "./CampaignReport";
+import LaunchCampaignButton from "./LaunchCampaignButton";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +108,15 @@ export default async function CampaignDrilldownPage({ params }: { params: { id: 
               <span className="text-small text-text-secondary">Channel: {campaign.channel}</span>
             </div>
           </div>
+          {campaign.status === "DRAFT" && (
+            <LaunchCampaignButton
+              campaignId={campaign.id}
+              name={campaign.name}
+              segmentId={campaign.segment_id}
+              channel={campaign.channel}
+              messageTemplate={campaign.message_template || ""}
+            />
+          )}
         </div>
       </div>
 

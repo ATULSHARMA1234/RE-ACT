@@ -20,9 +20,9 @@ function replaceTokens(template: string, customer: any) {
 
 export async function POST(req: Request) {
   try {
-    const { name, segment_id, channel, message_template } = await req.json();
+    const { campaignId, name, segment_id, channel, message_template } = await req.json();
 
-    if (!name || !segment_id || !channel || !message_template) {
+    if (!segment_id || !channel || !message_template) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -41,7 +41,6 @@ export async function POST(req: Request) {
       if (filter.rfm_score && filter.rfm_score.length > 0) where.rfm_score = { in: filter.rfm_score };
       if (filter.channel_pref && filter.channel_pref.length > 0) where.channel_pref = { in: filter.channel_pref };
     }
-    // Simplified for MVP: rely on just these fields for DB filtering, use memory filtering for order aggregates
     
     const allCustomers = await prisma.customer.findMany({
       where,
@@ -69,17 +68,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No customers match this segment" }, { status: 400 });
     }
 
-    // 2. Create the Campaign
-    const campaign = await prisma.campaign.create({
-      data: {
-        name,
-        segment_id,
-        channel,
-        message_template,
-        status: "SENDING",
-        sent_at: new Date(),
-      }
-    });
+    // 2. Create or Update the Campaign
+    let campaign;
+    if (campaignId) {
+      campaign = await prisma.campaign.update({
+        where: { id: campaignId },
+        data: {
+          status: "SENDING",
+          sent_at: new Date(),
+        }
+      });
+    } else {
+      campaign = await prisma.campaign.create({
+        data: {
+          name: name || "New Campaign",
+          segment_id,
+          channel,
+          message_template,
+          status: "SENDING",
+          sent_at: new Date(),
+        }
+      });
+    }
 
     // 3. Create Communication records for each matching customer
     const commRecords = await Promise.all(
