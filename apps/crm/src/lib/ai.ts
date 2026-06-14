@@ -163,7 +163,7 @@ Return ONLY a JSON object containing a "recommendations" array with exactly 3 it
   const content = await callAI(
     systemPrompt,
     `Here is the current state of our CRM:\n${statsSummary}`,
-    { temperature: 0.7, maxTokens: 800, json: true }
+    { temperature: 0.9, maxTokens: 800, json: true }
   );
 
   return safeParseJSON(content);
