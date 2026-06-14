@@ -6,6 +6,7 @@
     "react/no-unescaped-entities": "off",
     "@next/next/no-img-element": "off",
     "no-var": "off",
-    "prefer-const": "off"
+    "prefer-const": "off",
+    "react-hooks/exhaustive-deps": "off"
   }
 }
