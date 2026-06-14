@@ -1,22 +1,29 @@
-import Groq from "groq-sdk";
+import { GoogleGenAI } from "@google/genai";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
+const MODEL = "gemini-2.0-flash";
 
-const MODEL = "llama-3.3-70b-versatile";
+/**
+ * Helper: call Gemini with a system prompt and user message, return text
+ */
+async function callGemini(systemPrompt: string, userMessage: string, config?: { temperature?: number; maxOutputTokens?: number; responseMimeType?: string }): Promise<string> {
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: userMessage,
+    config: {
+      systemInstruction: systemPrompt,
+      temperature: config?.temperature ?? 0.5,
+      maxOutputTokens: config?.maxOutputTokens ?? 800,
+      responseMimeType: config?.responseMimeType,
+    },
+  });
+  const text = response.text;
+  if (!text) throw new Error("No response from Gemini");
+  return text;
+}
 
 /**
  * AI Intent Parser — translates natural language into a structured segment filter JSON.
- * Example output:
- * {
- *   "lifecycle_stage": ["ACTIVE", "AT_RISK"],
- *   "rfm_score": ["HIGH_VALUE"],
- *   "channel_pref": ["WHATSAPP"],
- *   "min_orders": 2,
- *   "max_days_since_purchase": 90,
- *   "min_spend": 500
- * }
  */
 export async function parseSegmentIntent(naturalLanguageQuery: string) {
   const systemPrompt = `You are Radiance CRM's AI segmentation engine. Given a marketer's natural language description of their target audience, convert it into a structured JSON filter.
@@ -40,26 +47,17 @@ Rules:
 5. If the user mentions "inactive" or "haven't purchased" or "lapsed", map to lifecycle_stage: ["AT_RISK", "DORMANT"] and/or max_days_since_purchase.
 6. If the user mentions "repeat" or "loyal" or "bought multiple times", use min_orders >= 2.`;
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: naturalLanguageQuery },
-    ],
+  const content = await callGemini(systemPrompt, naturalLanguageQuery, {
     temperature: 0.1,
-    max_tokens: 500,
-    response_format: { type: "json_object" },
+    maxOutputTokens: 500,
+    responseMimeType: "application/json",
   });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) throw new Error("No response from Groq");
 
   return JSON.parse(content);
 }
 
 /**
  * AI Message Drafter — generates personalized campaign copy.
- * Accepts audience context and returns copy with template tokens.
  */
 export async function draftMessage(
   campaignGoal: string,
@@ -78,28 +76,17 @@ Rules:
 4. Include a clear call-to-action.
 5. Return ONLY the message text, no extra formatting or explanation.`;
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      {
-        role: "user",
-        content: `Campaign goal: ${campaignGoal}\nTarget audience: ${audienceDescription}\nChannel: ${channel}`,
-      },
-    ],
-    temperature: 0.7,
-    max_tokens: 500,
-  });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) throw new Error("No response from Groq");
+  const content = await callGemini(
+    systemPrompt,
+    `Campaign goal: ${campaignGoal}\nTarget audience: ${audienceDescription}\nChannel: ${channel}`,
+    { temperature: 0.7, maxOutputTokens: 500 }
+  );
 
   return content.trim();
 }
 
 /**
  * Proactive AI Advisor — generates campaign recommendations based on database stats.
- * Returns an array of campaign recommendation objects.
  */
 export async function generateProactiveCampaigns(statsSummary: string) {
   const systemPrompt = `You are Radiance CRM's Proactive AI Marketing Advisor (Aura).
@@ -113,26 +100,17 @@ For each idea, specify:
 
 Return ONLY a JSON object containing a "recommendations" array with exactly 3 items. Do not return markdown, explanation, or code blocks.`;
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Here is the current state of our CRM:\n${statsSummary}` },
-    ],
-    temperature: 0.7,
-    max_tokens: 800,
-    response_format: { type: "json_object" },
-  });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) throw new Error("No response from Groq");
+  const content = await callGemini(
+    systemPrompt,
+    `Here is the current state of our CRM:\n${statsSummary}`,
+    { temperature: 0.7, maxOutputTokens: 800, responseMimeType: "application/json" }
+  );
 
   return JSON.parse(content);
 }
 
 /**
  * AI Text-to-Workflow Generator
- * Generates structured React Flow nodes and edges from a natural language prompt.
  */
 export async function generateWorkflowNodes(prompt: string) {
   const systemPrompt = `You are Radiance CRM's Workflow AI Architect. Your job is to convert a natural language description of an automation campaign into a structured React Flow JSON object.
@@ -152,26 +130,17 @@ Rules:
 - Edges must connect nodes. An edge is { id: string, source: string, target: string }.
 - Return ONLY a JSON object containing { "nodes": [], "edges": [] }. No markdown, no extra text.`;
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Create a workflow for: ${prompt}` },
-    ],
-    temperature: 0.2,
-    max_tokens: 1500,
-    response_format: { type: "json_object" },
-  });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) throw new Error("No response from Groq");
+  const content = await callGemini(
+    systemPrompt,
+    `Create a workflow for: ${prompt}`,
+    { temperature: 0.2, maxOutputTokens: 1500, responseMimeType: "application/json" }
+  );
 
   return JSON.parse(content);
 }
 
 /**
  * AI Voice Command Parser
- * Takes a natural language transcript and maps it to a strict Action Schema.
  */
 export async function parseVoiceCommand(transcript: string) {
   const systemPrompt = `You are the Radiance CRM Agentic Assistant (Aura). Your job is to parse a user's voice command and map it to a specific actionable intent.
@@ -180,83 +149,58 @@ Available Actions:
 1. UPDATE_SETTINGS
    - user wants to change/update/set/modify any CRM setting (e.g. dormant days, at-risk days, min spend, min orders).
    - extract: 'field' (string: exact field name from Settings model, e.g. "dormant_days", "at_risk_days", "high_value_min_spend", "high_value_min_orders", "mid_tier_min_spend", "mid_tier_min_orders"), 'value' (number: the new value).
-   - IMPORTANT: If the user says "change dormant days to 60", map to UPDATE_SETTINGS with field="dormant_days", value=60.
 2. CREATE_WORKFLOW
    - user wants to build an AUTOMATED SEQUENCE triggered by an EVENT with DELAYS and CONDITIONS.
-   - Keywords that indicate a workflow: "after", "when", "trigger", "delay", "wait", "hours later", "days later", "automated", "sequence", "if they", "follow up", "workflow", "automation".
-   - extract: 'name' (string), 'prompt' (string: include the full description with trigger event, delays, channels, and message intent).
-   - Example: "send a thank you email 2 hours after someone places an order" → CREATE_WORKFLOW.
-   - Example: "when a customer becomes dormant, wait 1 day then send a WhatsApp" → CREATE_WORKFLOW.
+   - Keywords: "after", "when", "trigger", "delay", "wait", "hours later", "days later", "automated", "sequence", "workflow".
+   - extract: 'name' (string), 'prompt' (string: full description with trigger event, delays, channels, and message intent).
 3. CREATE_SEGMENT
    - user wants to create an audience segment/group.
    - extract: 'name' (string), 'description' (string: who is in this segment).
 4. CREATE_CAMPAIGN
-   - user wants to send a ONE-TIME blast or broadcast to a group of customers RIGHT NOW.
-   - Keywords that indicate a campaign: "send to all", "blast", "broadcast", "campaign", "announce", "promote", "flash sale".
+   - user wants to send a ONE-TIME blast or broadcast RIGHT NOW.
+   - Keywords: "send to all", "blast", "broadcast", "campaign", "announce", "promote".
    - extract: 'name' (string), 'channel' (string: "EMAIL", "WHATSAPP", "SMS"), 'target_audience' (string), 'goal' (string).
-   - Example: "send a 20% discount to all VIP customers via SMS" → CREATE_CAMPAIGN.
 5. PAUSE_CAMPAIGN
    - user wants to pause or stop a campaign.
    - extract: 'campaign_name' (string).
 6. QUERY_DATA
-   - user asks a question about their metrics or data (e.g. "how many VIP customers do we have?").
+   - user asks a question about their metrics or data.
    - extract: 'question' (string: the exact question asked).
 7. NAVIGATE
-   - user just wants to view a page (e.g. "go to dashboard", "show customers").
+   - user just wants to view a page.
    - extract: 'page' (string: "dashboard", "workflows", "campaigns", "customers", "settings").
 
-CRITICAL DISAMBIGUATION RULES:
-- If the user mentions a TRIGGER EVENT (e.g. "after placing an order", "when they sign up") or a TIME DELAY (e.g. "2 hours later", "wait 1 day"), it is ALWAYS a CREATE_WORKFLOW, NEVER a CREATE_CAMPAIGN.
-- A CAMPAIGN is a one-time send. A WORKFLOW is a recurring automated sequence.
-- When in doubt between campaign and workflow, look for time-based language ("after", "when", "delay", "wait") — if present, choose CREATE_WORKFLOW.
-- Return ONLY a JSON object containing { "action": "ACTION_NAME", "payload": { ... } }.
-- Do not add markdown or explanation.`;
+CRITICAL: If the user mentions a TRIGGER EVENT or TIME DELAY, it is ALWAYS CREATE_WORKFLOW. A CAMPAIGN is a one-time send.
+Return ONLY a JSON object containing { "action": "ACTION_NAME", "payload": { ... } }.`;
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Voice transcript: "${transcript}"` },
-    ],
-    temperature: 0.1,
-    max_tokens: 500,
-    response_format: { type: "json_object" },
-  });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) throw new Error("No response from Groq");
+  const content = await callGemini(
+    systemPrompt,
+    `Voice transcript: "${transcript}"`,
+    { temperature: 0.1, maxOutputTokens: 500, responseMimeType: "application/json" }
+  );
 
   return JSON.parse(content);
 }
 
 /**
  * AI Data Analyst
- * Takes a context string (database summary) and a user's question, and returns a natural language answer.
  */
 export async function queryDataAI(contextStr: string, question: string) {
   const systemPrompt = `You are the Radiance CRM Data Analyst (Aura). You are given a summary of the current database state as context.
 Answer the user's question accurately using ONLY the provided context. 
 Keep your answer short, conversational, and direct (1-2 sentences), because it will be spoken out loud via Text-to-Speech to the user.`;
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Context:\n${contextStr}\n\nQuestion: ${question}` },
-    ],
-    temperature: 0.1,
-    max_tokens: 150,
-  });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) throw new Error("No response from Groq");
+  const content = await callGemini(
+    systemPrompt,
+    `Context:\n${contextStr}\n\nQuestion: ${question}`,
+    { temperature: 0.1, maxOutputTokens: 150 }
+  );
 
   return content.trim();
 }
 
 /**
  * AI Attribution Analyst
- * Takes aggregated campaign revenue metrics and generates a 2-sentence actionable insight.
  */
 export async function generateAttributionInsight(statsSummary: string) {
   const systemPrompt = `You are the Radiance CRM Chief Marketing Officer (Aura).
@@ -264,25 +208,17 @@ Analyze the provided Revenue Attribution metrics.
 Write a 2-sentence actionable insight highlighting the best performing channel by ROI/Revenue and recommending a budget shift or strategy adjustment.
 Keep it punchy, professional, and data-driven. Do not use markdown formatting.`;
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Metrics:\n${statsSummary}` },
-    ],
-    temperature: 0.4,
-    max_tokens: 150,
-  });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) throw new Error("No response from Groq");
+  const content = await callGemini(
+    systemPrompt,
+    `Metrics:\n${statsSummary}`,
+    { temperature: 0.4, maxOutputTokens: 150 }
+  );
 
   return content.trim();
 }
 
 /**
  * AI Campaign Analyst
- * Analyzes campaign performance metrics and suggests further actions to bring in more customers.
  */
 export async function generateCampaignInsights(metricsSummary: string) {
   const systemPrompt = `You are the Radiance CRM AI Analyst (Aura).
@@ -290,19 +226,11 @@ Analyze the following campaign performance metrics. Provide exactly 2 concise, a
 Return ONLY a JSON object with an array "recommendations" containing strings. No markdown, no explanation.
 Example: { "recommendations": ["Send a follow-up SMS to users who opened but didn't click.", "Create a 'Win Back' segment for those who failed delivery."] }`;
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Metrics:\n${metricsSummary}` },
-    ],
-    temperature: 0.5,
-    max_tokens: 300,
-    response_format: { type: "json_object" },
-  });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) throw new Error("No response from Groq");
+  const content = await callGemini(
+    systemPrompt,
+    `Metrics:\n${metricsSummary}`,
+    { temperature: 0.5, maxOutputTokens: 300, responseMimeType: "application/json" }
+  );
 
   return JSON.parse(content);
 }
