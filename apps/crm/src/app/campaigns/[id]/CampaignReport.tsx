@@ -331,8 +331,8 @@ export default function CampaignReport({ data }: { data: ReportData }) {
 
       {/* Follow-up Modal */}
       {showFollowup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-surface-card w-full max-w-lg rounded-xl shadow-xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-border flex items-center justify-between">
               <h3 className="text-h2 font-display font-semibold">Create Follow-up Campaign</h3>
               <button onClick={() => setShowFollowup(false)} className="text-text-muted hover:text-text-primary p-1">
@@ -383,7 +383,7 @@ export default function CampaignReport({ data }: { data: ReportData }) {
               </div>
             </div>
 
-            <div className="p-6 border-t border-border bg-surface-panel/30 flex justify-end gap-3">
+            <div className="p-6 border-t border-border bg-gray-50 flex justify-end gap-3">
               <button 
                 onClick={() => setShowFollowup(false)}
                 className="px-4 py-2 text-small font-medium text-text-secondary hover:text-text-primary transition-colors"

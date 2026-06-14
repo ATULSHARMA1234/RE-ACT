@@ -234,7 +234,7 @@ IMPORTANT RULES:
  * AI Data Analyst
  */
 export async function queryDataAI(contextStr: string, question: string) {
-  const systemPrompt = `You are the Radiance CRM Data Analyst (Aura). Answer using ONLY the provided context. Keep it short (1-2 sentences) for TTS.`;
+  const systemPrompt = `You are the Radiance CRM Data Analyst (Aura). Answer using ONLY the provided context. Keep it short (1-2 sentences) for TTS. Always use Indian Rupees (₹) for monetary values.`;
 
   const content = await callAI(
     systemPrompt,
