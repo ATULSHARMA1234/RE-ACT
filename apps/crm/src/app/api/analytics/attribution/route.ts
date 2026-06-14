@@ -88,6 +88,7 @@ export async function GET() {
         select: { campaign: { select: { channel: true } } }
       });
       for (const c of comms) {
+        if (!c.campaign) continue;
         const ch = c.campaign.channel.toUpperCase().split(",")[0].trim();
         if (metrics[ch]) metrics[ch].sent++;
       }
