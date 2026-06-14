@@ -350,6 +350,7 @@ export async function POST(req: NextRequest) {
     const systemWithContext = SYSTEM_PROMPT + contextNote;
 
     // Try Groq first (with timeout), fall back to Gemini
+    let groqErr = "";
     try {
       const groqResult = await Promise.race([
         runGroqChat(systemWithContext, messages),
@@ -357,13 +358,16 @@ export async function POST(req: NextRequest) {
       ]);
       return groqResult;
     } catch (groqError: any) {
-      console.warn(`Groq chat failed (${groqError?.message || groqError?.status}), falling back to Gemini...`);
-      try {
-        return await runGeminiChat(systemWithContext, messages);
-      } catch (geminiError: any) {
-        console.error("Both providers failed:", geminiError?.message);
-        return NextResponse.json({ success: false, error: "Both AI providers are temporarily unavailable. Please try again shortly." }, { status: 503 });
-      }
+      groqErr = groqError?.message || groqError?.status || "unknown";
+      console.warn(`Groq chat failed: ${groqErr}, falling back to Gemini...`);
+    }
+
+    try {
+      return await runGeminiChat(systemWithContext, messages);
+    } catch (geminiError: any) {
+      const geminiErr = geminiError?.message || geminiError?.status || "unknown";
+      console.error("Both providers failed — Groq:", groqErr, "| Gemini:", geminiErr);
+      return NextResponse.json({ success: false, error: `Groq: ${groqErr} | Gemini: ${geminiErr}` }, { status: 503 });
     }
 
   } catch (error: any) {
