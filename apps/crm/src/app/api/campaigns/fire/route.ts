@@ -107,7 +107,7 @@ export async function POST(req: Request) {
     });
 
     // 5. Fire async request to channel stub
-    const stubUrl = process.env.CHANNEL_STUB_URL || 'http://localhost:3001';
+    const stubUrl = process.env.CHANNEL_STUB_URL || 'https://radiance-stub-atul.onrender.com';
     
     try {
       const stubRes = await fetch(`${stubUrl}/send`, {

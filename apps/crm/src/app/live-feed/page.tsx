@@ -256,7 +256,7 @@ export default function LiveFeedPage() {
   const socketRef = useRef<Socket | null>(null);
   const router = useRouter();
 
-  const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+  const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://radiance-stub-atul.onrender.com";
 
   // Stats from events
   const customerEventCount = events.filter((e) => e.type === "CUSTOMER_EVENT").length;

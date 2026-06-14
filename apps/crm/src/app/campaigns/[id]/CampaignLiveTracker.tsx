@@ -40,7 +40,7 @@ export default function CampaignLiveTracker({ initialCampaign }: { initialCampai
   
   useEffect(() => {
     // Connect to channel stub
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://radiance-stub-atul.onrender.com';
     const socket = io(socketUrl);
 
     socket.on('delivery_event', (event) => {

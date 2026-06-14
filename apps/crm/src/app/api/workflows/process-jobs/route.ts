@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-const CHANNEL_STUB_URL = process.env.CHANNEL_STUB_URL || "http://localhost:3001";
+const CHANNEL_STUB_URL = process.env.CHANNEL_STUB_URL || "https://radiance-stub-atul.onrender.com";
 
 /**
  * Process pending workflow jobs that are due for execution.

@@ -82,7 +82,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     }));
 
     // 5. Fire to channel stub
-    const stubUrl = process.env.CHANNEL_STUB_URL || 'http://localhost:3001';
+    const stubUrl = process.env.CHANNEL_STUB_URL || 'https://radiance-stub-atul.onrender.com';
     fetch(`${stubUrl}/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
