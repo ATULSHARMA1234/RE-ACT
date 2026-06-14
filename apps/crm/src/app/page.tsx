@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Menu, Search, User, ShoppingBag, ArrowRight, BarChart3, Bot, TrendingUp, CheckCircle2 } from 'lucide-react';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function LandingPage() {
                 className="flex justify-between items-center h-20 px-landing-margin-mobile md:px-margin-desktop max-w-landing-container-max-width mx-auto">
                 {/*  Mobile Menu Button  */}
                 <button onClick={() => router.push('/dashboard')} className="md:hidden text-landing-secondary hover:opacity-80 transition-opacity duration-300">
-                    <span className="material-symbols-outlined">menu</span>
+                    <Menu size={24} />
                 </button>
                 {/*  Navigation Links (Desktop)  */}
                 <div className="hidden md:flex items-center space-x-landing-gutter">
@@ -49,15 +50,15 @@ export default function LandingPage() {
                 {/*  Trailing Action / Icons  */}
                 <div className="flex items-center space-x-6">
                     <div className="hidden md:flex items-center space-x-6 text-landing-secondary">
-                        <span onClick={() => router.push('/dashboard')} className="material-symbols-outlined cursor-pointer hover:text-primary transition-colors">search</span>
-                        <span onClick={() => router.push('/dashboard')} className="material-symbols-outlined cursor-pointer hover:text-primary transition-colors">person</span>
+                        <Search onClick={() => router.push('/dashboard')} size={22} className="cursor-pointer hover:text-primary transition-colors" />
+                        <User onClick={() => router.push('/dashboard')} size={22} className="cursor-pointer hover:text-primary transition-colors" />
                     </div>
                     <button
                         className=" font-landing-label-caps text-landing-label-caps text-landing-on-primary bg-landing-inverse-surface px-6 py-3 rounded-lg hover:opacity-90 transition-opacity hidden md:block" onClick={triggerDemoFlow}>
                         Request Demo
                     </button>
                     <button onClick={() => router.push('/dashboard')} className="md:hidden text-landing-secondary hover:opacity-80 transition-opacity duration-300">
-                        <span className="material-symbols-outlined">shopping_bag</span>
+                        <ShoppingBag size={22} />
                     </button>
                 </div>
             </div>
@@ -92,8 +93,7 @@ export default function LandingPage() {
                             <button
                                 className=" bg-landing-inverse-surface text-landing-on-primary font-landing-body-sm text-landing-body-sm font-medium px-12 py-5 rounded-lg hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2 ambient-shadow" onClick={triggerDemoFlow}>
                                 Request Demo
-                                <span className="material-symbols-outlined text-sm"
-                                    style={{ fontVariationSettings: "'FILL' 0" }}>arrow_forward</span>
+                                <ArrowRight size={16} />
                             </button>
                         </div>
                     </div>
@@ -119,7 +119,7 @@ export default function LandingPage() {
                         className="bg-landing-primary-container rounded-xl p-8 ambient-shadow border border-landing-outline-variant/20 flex flex-col h-full hover:-translate-y-1 transition-transform duration-300">
                         <div
                             className="w-12 h-12 rounded-full bg-landing-surface-container-lowest flex items-center justify-center mb-6">
-                            <span className="material-symbols-outlined text-landing-primary">data_usage</span>
+                            <BarChart3 size={24} className="text-landing-primary" />
                         </div>
                         <h3 className="font-landing-title-md text-landing-title-md text-landing-on-surface mb-3">Automated RFM Engine</h3>
                         <p className="font-landing-body-sm text-landing-body-sm text-landing-on-surface-variant flex-grow">
@@ -132,7 +132,7 @@ export default function LandingPage() {
                         className="bg-landing-secondary-container rounded-xl p-8 ambient-shadow border border-landing-outline-variant/20 flex flex-col h-full hover:-translate-y-1 transition-transform duration-300">
                         <div
                             className="w-12 h-12 rounded-full bg-landing-surface-container-lowest flex items-center justify-center mb-6">
-                            <span className="material-symbols-outlined text-landing-secondary">smart_toy</span>
+                            <Bot size={24} className="text-landing-secondary" />
                         </div>
                         <h3 className="font-landing-title-md text-landing-title-md text-landing-on-surface mb-3">AI Co-Pilot Interface</h3>
                         <p className="font-landing-body-sm text-landing-body-sm text-landing-on-surface-variant flex-grow">
@@ -145,7 +145,7 @@ export default function LandingPage() {
                         className="bg-landing-tertiary-container rounded-xl p-8 ambient-shadow border border-landing-outline-variant/20 flex flex-col h-full hover:-translate-y-1 transition-transform duration-300">
                         <div
                             className="w-12 h-12 rounded-full bg-landing-surface-container-lowest flex items-center justify-center mb-6">
-                            <span className="material-symbols-outlined text-landing-tertiary">monitoring</span>
+                            <TrendingUp size={24} className="text-landing-tertiary" />
                         </div>
                         <h3 className="font-landing-title-md text-landing-title-md text-landing-on-surface mb-3">Real-Time Analytics</h3>
                         <p className="font-landing-body-sm text-landing-body-sm text-landing-on-surface-variant flex-grow">
@@ -169,7 +169,7 @@ export default function LandingPage() {
                                 <div className="flex items-center gap-4 mb-4">
                                     <div
                                         className="w-8 h-8 rounded-full bg-landing-inverse-surface flex items-center justify-center text-landing-on-primary">
-                                        <span className="material-symbols-outlined text-sm">robot_2</span>
+                                        <Bot size={16} />
                                     </div>
                                     <p className="font-landing-body-sm text-landing-body-sm text-landing-on-surface-variant italic">"Show me the
                                         conversion rate for our new Éclat Naturel serum campaign."</p>
@@ -198,24 +198,23 @@ export default function LandingPage() {
                             </p>
                             <ul className="space-y-4 mb-10 w-full">
                                 <li className="flex items-center gap-3 border-b border-landing-outline-variant/20 pb-4">
-                                    <span className="material-symbols-outlined text-landing-primary">check_circle</span>
+                                    <CheckCircle2 size={20} className="text-landing-primary" />
                                     <span className="font-landing-body-sm text-landing-body-sm text-landing-on-surface">Predictive Replenishment
                                         Alerts</span>
                                 </li>
                                 <li className="flex items-center gap-3 border-b border-landing-outline-variant/20 pb-4">
-                                    <span className="material-symbols-outlined text-landing-primary">check_circle</span>
+                                    <CheckCircle2 size={20} className="text-landing-primary" />
                                     <span className="font-landing-body-sm text-landing-body-sm text-landing-on-surface">Automated VIP Tiering</span>
                                 </li>
                                 <li className="flex items-center gap-3 pb-2">
-                                    <span className="material-symbols-outlined text-landing-primary">check_circle</span>
+                                    <CheckCircle2 size={20} className="text-landing-primary" />
                                     <span className="font-landing-body-sm text-landing-body-sm text-landing-on-surface">Cross-sell Opportunity
                                         Identification</span>
                                 </li>
                             </ul>
                             <a className="font-landing-label-caps text-landing-label-caps text-landing-inverse-surface border-b border-landing-inverse-surface pb-1 hover:opacity-70 transition-opacity flex items-center gap-2"
                                 href="/dashboard">
-                                Explore All Features <span
-                                    className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                                Explore All Features <ArrowRight size={14} />
                             </a>
                         </div>
                     </div>

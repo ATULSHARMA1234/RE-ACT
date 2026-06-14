@@ -188,9 +188,8 @@ export default function CommandPalette() {
           speak(`I am ready to ${data.proposal.action.replace("_", " ")}. Please confirm the details.`);
         }
       } else {
-        speak("I'm sorry, I couldn't understand that command.");
-        alert("Failed to parse intent.");
-        setIsOpen(false);
+        speak("I'm sorry, I couldn't understand that command. Could you try rephrasing?");
+        setTimeout(() => setIsOpen(false), 2000);
       }
     } catch (e) {
       console.error(e);

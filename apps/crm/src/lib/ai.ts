@@ -9,6 +9,32 @@ const GROQ_MODEL = "llama-3.3-70b-versatile";
 const GEMINI_MODEL = "gemini-2.0-flash";
 
 /**
+ * Safely parse JSON from AI responses that may contain markdown fences or extra text.
+ */
+function safeParseJSON(text: string): any {
+  // Try direct parse first
+  try {
+    return JSON.parse(text);
+  } catch (_) {}
+
+  // Strip markdown code fences
+  let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (_) {}
+
+  // Extract first JSON object from the text
+  const match = text.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      return JSON.parse(match[0]);
+    } catch (_) {}
+  }
+
+  throw new Error(`Failed to parse JSON from AI response: ${text.substring(0, 200)}`);
+}
+
+/**
  * Dual-provider AI call: tries Groq first, falls back to Gemini on any error.
  */
 async function callAI(systemPrompt: string, userMessage: string, config?: { temperature?: number; maxTokens?: number; json?: boolean }): Promise<string> {
@@ -83,7 +109,7 @@ Rules:
     json: true,
   });
 
-  return JSON.parse(content);
+  return safeParseJSON(content);
 }
 
 /**
@@ -136,7 +162,7 @@ Return ONLY a JSON object containing a "recommendations" array with exactly 3 it
     { temperature: 0.7, maxTokens: 800, json: true }
   );
 
-  return JSON.parse(content);
+  return safeParseJSON(content);
 }
 
 /**
@@ -166,7 +192,7 @@ Rules:
     { temperature: 0.2, maxTokens: 1500, json: true }
   );
 
-  return JSON.parse(content);
+  return safeParseJSON(content);
 }
 
 /**
@@ -177,15 +203,19 @@ export async function parseVoiceCommand(transcript: string) {
 
 Available Actions:
 1. UPDATE_SETTINGS - extract: 'field' (string), 'value' (number).
-2. CREATE_WORKFLOW - extract: 'name' (string), 'prompt' (string).
-3. CREATE_SEGMENT - extract: 'name' (string), 'description' (string).
-4. CREATE_CAMPAIGN - extract: 'name', 'channel' ("EMAIL"|"WHATSAPP"|"SMS"), 'target_audience', 'goal'.
+2. CREATE_WORKFLOW - extract: 'name' (string), 'prompt' (string describing the workflow steps).
+3. CREATE_SEGMENT - extract: 'name' (string), 'description' (string describing the audience).
+4. CREATE_CAMPAIGN - extract: 'name' (string), 'channel' ("EMAIL"|"WHATSAPP"|"SMS"), 'target_audience' (string), 'goal' (string).
 5. PAUSE_CAMPAIGN - extract: 'campaign_name' (string).
-6. QUERY_DATA - extract: 'question' (string).
-7. NAVIGATE - extract: 'page' ("dashboard"|"workflows"|"campaigns"|"customers"|"settings").
+6. QUERY_DATA - extract: 'question' (string). Use this for any data questions like "how many customers", "total revenue", "show stats", etc.
+7. NAVIGATE - extract: 'page' ("dashboard"|"workflows"|"campaigns"|"customers"|"settings"|"segments"|"live-feed"|"analytics"). Use this when user says "go to", "open", "show me", "take me to".
 
-CRITICAL: If user mentions trigger events or time delays, use CREATE_WORKFLOW.
-Return ONLY { "action": "ACTION_NAME", "payload": { ... } }.`;
+IMPORTANT RULES:
+- If the transcript is unclear or general (like "hello", "hi", "help"), treat it as QUERY_DATA with question set to the transcript.
+- If user mentions trigger events or time delays, use CREATE_WORKFLOW.
+- Always pick the BEST matching action. Never return an error or empty response.
+- Return ONLY a valid JSON object: { "action": "ACTION_NAME", "payload": { ... } }
+- Do NOT wrap in markdown code fences. Return raw JSON only.`;
 
   const content = await callAI(
     systemPrompt,
@@ -193,7 +223,7 @@ Return ONLY { "action": "ACTION_NAME", "payload": { ... } }.`;
     { temperature: 0.1, maxTokens: 500, json: true }
   );
 
-  return JSON.parse(content);
+  return safeParseJSON(content);
 }
 
 /**
@@ -239,5 +269,5 @@ Return ONLY a JSON object: { "recommendations": ["...", "..."] }`;
     { temperature: 0.5, maxTokens: 300, json: true }
   );
 
-  return JSON.parse(content);
+  return safeParseJSON(content);
 }
