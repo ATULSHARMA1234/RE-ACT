@@ -29,13 +29,33 @@ export async function POST(req: Request) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
+    // Ensure Settings singleton exists (needed for recalculation)
+    await prisma.settings.upsert({
+      where: { id: "singleton" },
+      update: {},
+      create: {
+        id: "singleton",
+        high_value_min_spend: 10000.0,
+        high_value_min_orders: 5,
+        mid_tier_min_spend: 3000.0,
+        mid_tier_min_orders: 2,
+        at_risk_days: 60,
+        dormant_days: 120,
+      },
+    });
+
+    const settings = (await prisma.settings.findUnique({ where: { id: "singleton" } }))!;
+
     // Clean first
     console.log("Wiping database before massive seed...");
     await prisma.commEvent.deleteMany({});
     await prisma.communication.deleteMany({});
+    await prisma.workflowJob.deleteMany({});
+    await prisma.customerEvent.deleteMany({});
     await prisma.campaign.deleteMany({});
     await prisma.segment.deleteMany({});
     await prisma.order.deleteMany({});
+    await prisma.workflow.deleteMany({});
     await prisma.customer.deleteMany({});
 
     const BATCH_SIZE = 10000; // Optimal batch size for Prisma bulk inserts
@@ -44,7 +64,7 @@ export async function POST(req: Request) {
 
     for (let batchStart = 0; batchStart < TOTAL_CUSTOMERS; batchStart += BATCH_SIZE) {
       const customersBatch = [];
-      const ordersBatch = [];
+      const ordersBatch: any[] = [];
       
       const currentBatchSize = Math.min(BATCH_SIZE, TOTAL_CUSTOMERS - batchStart);
 
@@ -83,6 +103,9 @@ export async function POST(req: Request) {
         mockCampaigns = existingCampaigns.map(c => ({ id: c.id, channel: c.channel }));
       }
 
+      // Track per-customer order data for RFM/lifecycle calculation
+      const customerOrderMeta: Map<string, { totalSpend: number; totalOrders: number; daysSinceLast: number | null }> = new Map();
+
       for (let i = 0; i < currentBatchSize; i++) {
         const customerId = crypto.randomUUID(); // Pre-generate ID for relational mapping
         
@@ -96,22 +119,11 @@ export async function POST(req: Request) {
         const city = cities[cityIndex];
         const state = states[cityIndex];
 
-        customersBatch.push({
-          id: customerId,
-          name,
-          email,
-          phone: `+1${randomInt(200, 999)}${randomInt(1000000, 9999999)}`,
-          city,
-          state,
-          channel_pref: randomItem(channels),
-          lifecycle_stage: "NEW", // Will be recalculated by the engine later
-          rfm_score: "LOW_VALUE", 
-        });
-
         // 70% of customers have 1-4 orders, 30% have 0 orders
         const orderCount = Math.random() > 0.3 ? randomInt(1, 4) : 0;
         const daysSinceLastPurchase = randomInt(1, 200);
 
+        let totalSpend = 0;
         let lastOrderDate = new Date();
         lastOrderDate.setDate(lastOrderDate.getDate() - daysSinceLastPurchase);
 
@@ -119,6 +131,8 @@ export async function POST(req: Request) {
           const product = randomItem(products);
           const orderDate = new Date(lastOrderDate);
           orderDate.setDate(orderDate.getDate() - (j * randomInt(10, 40)));
+          const amount = randomInt(product.min, product.max);
+          totalSpend += amount;
 
           // Randomly attribute ~25% of orders to one of the dummy campaigns
           const isAttributed = Math.random() > 0.75;
@@ -127,12 +141,46 @@ export async function POST(req: Request) {
           ordersBatch.push({
             id: crypto.randomUUID(),
             customer_id: customerId,
-            amount: randomInt(product.min, product.max),
+            amount,
             product_name: product.name,
             created_at: orderDate,
             attributed_campaign_id: attributedCampaign ? attributedCampaign.id : null
           });
         }
+
+        // Calculate RFM score inline
+        let rfmScore = "LOW_VALUE";
+        if (totalSpend >= settings.high_value_min_spend || orderCount >= settings.high_value_min_orders) {
+          rfmScore = "HIGH_VALUE";
+        } else if (totalSpend >= settings.mid_tier_min_spend || orderCount >= settings.mid_tier_min_orders) {
+          rfmScore = "MID_TIER";
+        }
+
+        // Calculate lifecycle stage inline
+        let lifecycleStage = "NEW";
+        if (orderCount === 0) {
+          lifecycleStage = "NEW";
+        } else if (daysSinceLastPurchase >= settings.dormant_days) {
+          lifecycleStage = "DORMANT";
+        } else if (daysSinceLastPurchase >= settings.at_risk_days) {
+          lifecycleStage = "AT_RISK";
+        } else if (orderCount <= 1 && daysSinceLastPurchase < 14) {
+          lifecycleStage = "NEW";
+        } else {
+          lifecycleStage = "ACTIVE";
+        }
+
+        customersBatch.push({
+          id: customerId,
+          name,
+          email,
+          phone: `+1${randomInt(200, 999)}${randomInt(1000000, 9999999)}`,
+          city,
+          state,
+          channel_pref: randomItem(channels),
+          lifecycle_stage: lifecycleStage,
+          rfm_score: rfmScore,
+        });
       }
 
       // Insert the batch
@@ -145,8 +193,26 @@ export async function POST(req: Request) {
       console.log(`Seeded batch ${batchStart / BATCH_SIZE + 1} / ${Math.ceil(TOTAL_CUSTOMERS / BATCH_SIZE)}`);
     }
 
+    // Count the distribution for the response
+    const [highCount, midCount, lowCount, newCount, activeCount, atRiskCount, dormantCount] = await Promise.all([
+      prisma.customer.count({ where: { rfm_score: "HIGH_VALUE" } }),
+      prisma.customer.count({ where: { rfm_score: "MID_TIER" } }),
+      prisma.customer.count({ where: { rfm_score: "LOW_VALUE" } }),
+      prisma.customer.count({ where: { lifecycle_stage: "NEW" } }),
+      prisma.customer.count({ where: { lifecycle_stage: "ACTIVE" } }),
+      prisma.customer.count({ where: { lifecycle_stage: "AT_RISK" } }),
+      prisma.customer.count({ where: { lifecycle_stage: "DORMANT" } }),
+    ]);
+
     console.log("Massive seeding complete.");
-    return NextResponse.json({ success: true, message: `Successfully seeded ${TOTAL_CUSTOMERS.toLocaleString()} mock customers.` });
+    return NextResponse.json({ 
+      success: true, 
+      message: `Successfully seeded ${TOTAL_CUSTOMERS.toLocaleString()} customers.`,
+      distribution: {
+        rfm: { HIGH_VALUE: highCount, MID_TIER: midCount, LOW_VALUE: lowCount },
+        lifecycle: { NEW: newCount, ACTIVE: activeCount, AT_RISK: atRiskCount, DORMANT: dormantCount },
+      }
+    });
   } catch (error: any) {
     console.error("Database Mass Seed Error details:", error.message, error.stack);
     return NextResponse.json({ error: "Failed to mass seed database", details: error.message }, { status: 500 });
