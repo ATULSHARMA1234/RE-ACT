@@ -3,12 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Menu, Search, User, ShoppingBag, ArrowRight, BarChart3, Bot, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Menu, User, ShoppingBag, ArrowRight, BarChart3, Bot, TrendingUp, CheckCircle2, X, Mail, Lock, UserPlus, LogIn } from 'lucide-react';
 
 export default function LandingPage() {
   const router = useRouter();
   const [isZoomed, setIsZoomed] = useState(false);
   const [isFading, setIsFading] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   const triggerDemoFlow = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -23,6 +28,47 @@ export default function LandingPage() {
     }, 2200);
   };
 
+  const handleAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+
+    if (!authForm.email || !authForm.password) {
+      setAuthError('Please fill in all fields.');
+      return;
+    }
+
+    if (authMode === 'signup' && !authForm.name) {
+      setAuthError('Please enter your name.');
+      return;
+    }
+
+    setAuthLoading(true);
+
+    // Simulate authentication with a short delay
+    setTimeout(() => {
+      setAuthLoading(false);
+      setIsZoomed(true);
+      setShowAuth(false);
+
+      setTimeout(() => {
+        setIsFading(true);
+      }, 800);
+
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1800);
+    }, 1200);
+  };
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowAuth(false);
+    };
+    if (showAuth) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAuth]);
+
   return (
     
     <div className={`min-h-screen flex flex-col transition-opacity duration-1000 ${isFading ? 'opacity-0' : ''}`}>
@@ -34,35 +80,171 @@ export default function LandingPage() {
                 <button onClick={() => router.push('/dashboard')} className="md:hidden text-landing-secondary hover:opacity-80 transition-opacity duration-300">
                     <Menu size={24} />
                 </button>
-                {/*  Navigation Links (Desktop)  */}
-                <div className="hidden md:flex items-center space-x-landing-gutter">
-                    <a className="font-landing-label-caps text-landing-label-caps text-landing-primary border-b border-landing-primary pb-1 cursor-pointer active:scale-95 transition-transform"
-                        href="/dashboard">Product</a>
-                    <a className="font-landing-label-caps text-landing-label-caps text-landing-secondary hover:text-primary transition-colors cursor-pointer active:scale-95 transition-transform"
-                        href="/dashboard">Solutions</a>
-                    <a className="font-landing-label-caps text-landing-label-caps text-landing-secondary hover:text-primary transition-colors cursor-pointer active:scale-95 transition-transform"
-                        href="/dashboard">Pricing</a>
+                {/*  Left spacer for desktop (replaces removed nav links)  */}
+                <div className="hidden md:flex items-center">
                 </div>
                 {/*  Brand Logo  */}
                 <div className="absolute left-1/2 transform -translate-x-1/2">
-                    <a className="font-landing-display-lg text-landing-title-md tracking-tighter text-landing-secondary" href="/dashboard">RADIANCE AI</a>
+                    <a className="font-landing-display-lg text-landing-title-md tracking-tighter text-landing-secondary" href="/">RADIANCE AI</a>
                 </div>
                 {/*  Trailing Action / Icons  */}
                 <div className="flex items-center space-x-6">
                     <div className="hidden md:flex items-center space-x-6 text-landing-secondary">
-                        <Search onClick={() => router.push('/dashboard')} size={22} className="cursor-pointer hover:text-primary transition-colors" />
-                        <User onClick={() => router.push('/dashboard')} size={22} className="cursor-pointer hover:text-primary transition-colors" />
+                        <User onClick={() => setShowAuth(true)} size={22} className="cursor-pointer hover:text-primary transition-colors" />
                     </div>
                     <button
                         className=" font-landing-label-caps text-landing-label-caps text-landing-on-primary bg-landing-inverse-surface px-6 py-3 rounded-lg hover:opacity-90 transition-opacity hidden md:block" onClick={triggerDemoFlow}>
                         Request Demo
                     </button>
-                    <button onClick={() => router.push('/dashboard')} className="md:hidden text-landing-secondary hover:opacity-80 transition-opacity duration-300">
-                        <ShoppingBag size={22} />
+                    <button onClick={() => setShowAuth(true)} className="md:hidden text-landing-secondary hover:opacity-80 transition-opacity duration-300">
+                        <User size={22} />
                     </button>
                 </div>
             </div>
         </nav>
+
+        {/*  Auth Modal  */}
+        {showAuth && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setShowAuth(false)}
+            />
+            {/* Modal */}
+            <div className="relative w-full max-w-md mx-4 bg-landing-surface-container-lowest rounded-2xl shadow-2xl border border-landing-outline-variant/20 overflow-hidden animate-[fadeInUp_0.3s_ease-out]">
+              {/* Close button */}
+              <button
+                onClick={() => setShowAuth(false)}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-landing-on-surface-variant hover:bg-landing-outline-variant/10 transition-colors z-10"
+              >
+                <X size={18} />
+              </button>
+
+              {/* Header */}
+              <div className="pt-10 pb-6 px-8 text-center bg-landing-primary-container/30">
+                <div className="w-14 h-14 rounded-full bg-landing-inverse-surface flex items-center justify-center mx-auto mb-4">
+                  {authMode === 'login' ? (
+                    <LogIn size={24} className="text-landing-on-primary" />
+                  ) : (
+                    <UserPlus size={24} className="text-landing-on-primary" />
+                  )}
+                </div>
+                <h2 className="font-landing-headline-lg text-landing-title-md text-landing-on-surface mb-1">
+                  {authMode === 'login' ? 'Welcome back' : 'Create your account'}
+                </h2>
+                <p className="font-landing-body-sm text-landing-body-sm text-landing-on-surface-variant">
+                  {authMode === 'login'
+                    ? 'Sign in to access your RADIANCE dashboard'
+                    : 'Get started with RADIANCE AI for free'}
+                </p>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleAuth} className="px-8 pb-8 pt-6 space-y-4">
+                {authMode === 'signup' && (
+                  <div>
+                    <label className="block font-landing-label-caps text-[11px] text-landing-on-surface-variant tracking-wider uppercase mb-2">
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-landing-outline" />
+                      <input
+                        type="text"
+                        placeholder="Jane Doe"
+                        value={authForm.name}
+                        onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
+                        className="w-full pl-10 pr-4 py-3.5 rounded-lg border border-landing-outline-variant/30 bg-landing-surface-container-lowest text-landing-on-surface font-landing-body-sm text-landing-body-sm placeholder:text-landing-outline focus:outline-none focus:border-landing-primary focus:ring-2 focus:ring-landing-primary/20 transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block font-landing-label-caps text-[11px] text-landing-on-surface-variant tracking-wider uppercase mb-2">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-landing-outline" />
+                    <input
+                      type="email"
+                      placeholder="you@company.com"
+                      value={authForm.email}
+                      onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3.5 rounded-lg border border-landing-outline-variant/30 bg-landing-surface-container-lowest text-landing-on-surface font-landing-body-sm text-landing-body-sm placeholder:text-landing-outline focus:outline-none focus:border-landing-primary focus:ring-2 focus:ring-landing-primary/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-landing-label-caps text-[11px] text-landing-on-surface-variant tracking-wider uppercase mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-landing-outline" />
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={authForm.password}
+                      onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3.5 rounded-lg border border-landing-outline-variant/30 bg-landing-surface-container-lowest text-landing-on-surface font-landing-body-sm text-landing-body-sm placeholder:text-landing-outline focus:outline-none focus:border-landing-primary focus:ring-2 focus:ring-landing-primary/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {authError && (
+                  <p className="text-red-500 text-sm font-medium text-center">{authError}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full bg-landing-inverse-surface text-landing-on-primary font-landing-body-sm text-landing-body-sm font-medium py-4 rounded-lg hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+                >
+                  {authLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-landing-on-primary/30 border-t-landing-on-primary rounded-full animate-spin" />
+                      {authMode === 'login' ? 'Signing in...' : 'Creating account...'}
+                    </>
+                  ) : (
+                    <>
+                      {authMode === 'login' ? 'Sign In' : 'Create Account'}
+                      <ArrowRight size={16} />
+                    </>
+                  )}
+                </button>
+
+                {/* Toggle mode */}
+                <p className="text-center font-landing-body-sm text-landing-body-sm text-landing-on-surface-variant pt-2">
+                  {authMode === 'login' ? (
+                    <>
+                      Don&apos;t have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+                        className="text-landing-primary font-medium hover:underline"
+                      >
+                        Sign up
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                        className="text-landing-primary font-medium hover:underline"
+                      >
+                        Sign in
+                      </button>
+                    </>
+                  )}
+                </p>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/*  Main Content  */}
         <main className="flex-grow pt-20 overflow-hidden">
             {/*  Hero Section  */}
@@ -256,19 +438,9 @@ export default function LandingPage() {
         {/*  Footer  */}
         <footer className="bg-landing-surface-container-low border-t border-landing-outline-variant/20 w-full transition-all duration-200">
             <div
-                className="flex flex-col md:flex-row justify-between items-center py-12 px-landing-margin-mobile md:px-margin-desktop max-w-landing-container-max-width mx-auto gap-landing-gutter">
+                className="flex flex-col md:flex-row justify-between items-center py-12 px-landing-margin-mobile md:px-margin-desktop max-w-landing-container-max-width mx-auto">
                 <div className="mb-6 md:mb-0">
                     <span className="font-landing-display-lg text-landing-headline-lg text-landing-secondary">RADIANCE AI</span>
-                </div>
-                <div className="flex flex-wrap justify-center gap-6 mb-6 md:mb-0">
-                    <a className="font-landing-body-sm text-landing-body-sm text-landing-on-secondary-container hover:text-primary transition-colors"
-                        href="/dashboard">Privacy Policy</a>
-                    <a className="font-landing-body-sm text-landing-body-sm text-landing-on-secondary-container hover:text-primary transition-colors"
-                        href="/dashboard">Terms of Service</a>
-                    <a className="font-landing-body-sm text-landing-body-sm text-landing-on-secondary-container hover:text-primary transition-colors"
-                        href="/dashboard">Contact</a>
-                    <a className="font-landing-body-sm text-landing-body-sm text-landing-on-secondary-container hover:text-primary transition-colors"
-                        href="/dashboard">Careers</a>
                 </div>
                 <div className="text-center md:text-right font-landing-body-sm text-landing-body-sm text-landing-on-secondary-container">
                     © 2024 RADIANCE AI. All rights reserved.
